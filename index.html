@@ -14,6 +14,9 @@
      encodes pitchers: series colour comes from --chart-p everywhere now. */
   --blue:#1A5FA0; --blue-soft:#DEE9F6; --land:#DFE4EC;
   --chart-h:#BA4104; --chart-p:#087D88;
+  /* the strip's third segment. It carries surface-coloured text like the
+     other two, so it has to be dark here and light in dark mode. */
+  --mix-rest:#3F4855;
   /* Medals mark the top three on the selected measure. Gold and bronze sit
      below the readability floor for each other -- that similarity is what makes
      them read as medals -- so the rank numeral, not the hue, is the encoding. */
@@ -26,6 +29,7 @@
   --accent:#E26333; --accent-ink:#FD9A77; --accent-soft:#3A1A0E;
   --blue:#6FA9E2; --blue-soft:#152739; --land:#26303B;
   --chart-h:#E26333; --chart-p:#109EAB;
+  --mix-rest:#B2BCC9;
   --medal-1:#C79A2E; --medal-2:#8B96A4; --medal-3:#B5713A; --medal-last:#2E7CC9;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
 }}
@@ -35,6 +39,7 @@
   --accent:#E26333; --accent-ink:#FD9A77; --accent-soft:#3A1A0E;
   --blue:#6FA9E2; --blue-soft:#152739; --land:#26303B;
   --chart-h:#E26333; --chart-p:#109EAB;
+  --mix-rest:#B2BCC9;
   --medal-1:#C79A2E; --medal-2:#8B96A4; --medal-3:#B5713A; --medal-last:#2E7CC9;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
 }
@@ -207,7 +212,7 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .gr-svg text.gr-n{font-size:11px;font-weight:700;fill:var(--surface);font-variant-numeric:tabular-nums;paint-order:stroke;stroke:var(--chart-p);stroke-width:3}
 .gr-mix{margin-top:6px}
 .gr-mix text.gr-mixh{font-size:10.5px;fill:var(--muted)}
-.gr-mix text.gr-mixp{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.gr-mix text.gr-mixp{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;fill:var(--surface)}
 .gr-mix text.gr-mixl{font-size:10.5px;font-weight:600;fill:var(--ink-2)}
 .gr-svg line.gr-ld{stroke:var(--ink-2);stroke-width:0.9;opacity:0.55}
 .gr-svg text.gr-c{font-size:10.5px;font-weight:600;fill:var(--ink-2);paint-order:stroke;stroke:var(--surface);stroke-width:3}
@@ -1873,9 +1878,9 @@ function grMix(root, DUR){
   const at=n=>{const c=G.countries.find(d=>d.country===n); return c?grAt(c.per,grPos):0;};
   const vz=at('Venezuela'), dr=at('Dominican Republic');
   const tot=grAt(G.totals,grPos)||1;
-  const parts=[{k:'vz',   l:'Venezuela',          v:vz,        c:'var(--chart-p)', t:'var(--surface)'},
-               {k:'dr',   l:'Dominican Republic', v:dr,        c:'var(--chart-h)', t:'var(--surface)'},
-               {k:'rest', l:'Everywhere else',    v:tot-vz-dr, c:'var(--land)',    t:'var(--ink-2)'}];
+  const parts=[{k:'vz',   l:'Venezuela',          v:vz,        c:'var(--chart-p)'},
+               {k:'dr',   l:'Dominican Republic', v:dr,        c:'var(--chart-h)'},
+               {k:'rest', l:'Everywhere else',    v:tot-vz-dr, c:'var(--mix-rest)'}];
   const L=8, IW=744, Y=24, BH=28, GAP=2;
   let x=L;
   parts.forEach(p=>{ p.x=x; p.w=Math.max(IW*p.v/tot,1); p.pc=100*p.v/tot; x+=p.w; });
@@ -1890,8 +1895,7 @@ function grMix(root, DUR){
       return q;});
   tr(g.select('rect')).attr('x',d=>d.x.toFixed(1))
     .attr('width',d=>Math.max(d.w-GAP,1).toFixed(1)).attr('fill',d=>d.c);
-  tr(g.select('.gr-mixp')).attr('x',d=>(d.x+d.w/2).toFixed(1)).attr('y',Y+19)
-    .attr('fill',d=>d.t);
+  tr(g.select('.gr-mixp')).attr('x',d=>(d.x+d.w/2).toFixed(1)).attr('y',Y+19);
   g.select('.gr-mixp').text(d=>d.pc>=7?d.pc.toFixed(1)+'%':'');
   tr(g.select('.gr-mixl')).attr('x',d=>(d.x+d.w/2).toFixed(1));
   g.select('.gr-mixl').text(d=>d.pc>=11?d.l:'');
