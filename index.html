@@ -1879,15 +1879,28 @@ function sceneGrowth(){
 // with hitters and pitchers two blocks further down. It shows the CURRENT
 // period, never the running total, because a cumulative share is an average
 // that lags: Venezuela ends at 37% of the period and only 32% of the census.
+// The map and the strip now read as one figure, so they share a key: the
+// Dominican Republic orange, Venezuela teal, everyone else the dark neutral.
+// The circles are opaque because a tint is not a colour. Drawn at the old 42%
+// over the land these three collapse -- teal against the neutral falls to 6.3
+// in normal vision against a floor of 15, and to 4.1 under deuteranopia -- so
+// the fill carries no identity at all once it is washed out. At full strength
+// the trio clears every floor, and a surface ring keeps overlapping circles
+// apart instead of the transparency doing it.
+function grHue(c){
+  return c==='Dominican Republic' ? 'var(--chart-h)'
+       : c==='Venezuela'          ? 'var(--chart-p)'
+       :                            'var(--mix-rest)';
+}
 function grMix(root, DUR){
   const G=grData(), svg=d3.select(root).select('.gr-mix');
   if(svg.empty()) return;
   const at=n=>{const c=G.countries.find(d=>d.country===n); return c?grAt(c.per,grPos):0;};
   const vz=at('Venezuela'), dr=at('Dominican Republic');
   const tot=grAt(G.totals,grPos)||1;
-  const parts=[{k:'vz',   l:'Venezuela',          v:vz,        c:'var(--chart-p)'},
-               {k:'dr',   l:'Dominican Republic', v:dr,        c:'var(--chart-h)'},
-               {k:'rest', l:'Everywhere else',    v:tot-vz-dr, c:'var(--mix-rest)'}];
+  const parts=[{k:'vz',   l:'Venezuela',          v:vz,        c:grHue('Venezuela')},
+               {k:'dr',   l:'Dominican Republic', v:dr,        c:grHue('Dominican Republic')},
+               {k:'rest', l:'Everywhere else',    v:tot-vz-dr, c:grHue('')}];
   const L=8, IW=744, Y=24, BH=28, GAP=2;
   let x=L;
   parts.forEach(p=>{ p.x=x; p.w=Math.max(IW*p.v/tot,1); p.pc=100*p.v/tot; x+=p.w; });
@@ -1931,10 +1944,10 @@ function grPaint(root, animate){
     .sort((a,b)=>val(b)-val(a));           // big circles first, small on top
   svg.select('.gr-bub').selectAll('circle').data(rows,d=>d.country)
     .join(en=>en.append('circle').attr('cx',d=>d.x).attr('cy',d=>d.y).attr('r',0)
-             .attr('fill','var(--chart-p)').attr('fill-opacity',0.42)
-             .attr('stroke','var(--chart-p)').attr('stroke-width',1.2)
+             .attr('stroke','var(--surface)').attr('stroke-width',1.5)
              .call(s=>s.append('title')),
           up=>up, ex=>tr(ex).attr('r',0).remove())
+    .attr('fill',d=>grHue(d.country))
     .call(s=>s.select('title').text(d=>d.country+': '+
         Math.round(val(d)).toLocaleString()+
         (grMode==='cum'?' signed through ':' signed in ')+G.periods[grIdx()].label))
@@ -2006,7 +2019,8 @@ function grPaint(root, animate){
         .attr('x1',d=>d.lead?d.lead[0].toFixed(1):0).attr('y1',d=>d.lead?d.lead[1].toFixed(1):0)
         .attr('x2',d=>d.lead?d.lead[2].toFixed(1):0).attr('y2',d=>d.lead?d.lead[3].toFixed(1):0);
       s.select('.gr-n').attr('display',d=>d.inside?null:'none')
-        .attr('x',d=>d.cx.toFixed(1)).attr('y',d=>(d.cy+2).toFixed(1)).text(d=>d.txt);
+        .attr('x',d=>d.cx.toFixed(1)).attr('y',d=>(d.cy+2).toFixed(1))
+        .style('stroke',d=>grHue(d.country)).text(d=>d.txt);
       s.select('.gr-c').attr('x',d=>d.ax.toFixed(1))
         .attr('y',d=>d.ty.toFixed(1)).text(d=>d.text);
     });
