@@ -771,13 +771,31 @@ const $ = s => document.querySelector(s);
    birth, no per-player bonus figures. Two features read the row array and are
    removed rather than left to render empty. */
 const PUBLIC = !!D.public;
+// Tabs the published page shows, in order. One at a time: a tab joins this list
+// when its content and copy are finished, not when its charts first render. The
+// local build always shows everything, so work in progress stays reachable while
+// it is being built.
+const V1_TABS = ['t-story'];
 if(PUBLIC){
-  // Remove the nav button only. The panel and its filter controls stay in the
-  // DOM: page setup wires #f-c, #f-p and #f-t at load, and deleting them threw
-  // on the first lookup, which aborted the rest of the script and left every
-  // tab blank. Unreachable is enough -- it holds no rows on this build.
-  const b=document.querySelector('#t-index'); if(b) b.remove();
-  const pnl=document.querySelector('#p-index'); if(pnl) pnl.hidden=true;
+  // Hide by removing the nav BUTTON and leaving the panel in the DOM. Deleting
+  // a panel removed controls that page setup wires at load (#f-c, #f-p, #f-t),
+  // which threw on first lookup and blanked the whole page.
+  document.querySelectorAll('.tab').forEach(t=>{
+    if(V1_TABS.indexOf(t.id)<0){
+      const pnl=document.querySelector('#'+t.getAttribute('aria-controls'));
+      if(pnl) pnl.hidden=true;
+      t.remove();
+    }
+  });
+  const keep=document.querySelector('#'+V1_TABS[0]);
+  if(keep){
+    keep.setAttribute('aria-selected','true');
+    const pnl=document.querySelector('#'+keep.getAttribute('aria-controls'));
+    if(pnl) pnl.hidden=false;
+  }
+  // A single tab is not a choice, so the tablist is noise.
+  const bar=document.querySelector('[role="tablist"]');
+  if(bar && V1_TABS.length<2) bar.hidden=true;
 }
 /* ---------- tabs ---------- */
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
