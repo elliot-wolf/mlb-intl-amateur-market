@@ -209,8 +209,7 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .gr-tog{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px}
 .gr-svg text.gr-when{font-size:26px;font-weight:700;fill:var(--ink);font-variant-numeric:tabular-nums}
 .gr-svg text.gr-tot{font-size:13px;fill:var(--muted);font-variant-numeric:tabular-nums}
-.gr-svg text.gr-n{font-size:11px;font-weight:700;fill:var(--surface);font-variant-numeric:tabular-nums;paint-order:stroke;stroke:var(--chart-p);stroke-width:3}
-.gr-svg .gr-edge{opacity:.55;pointer-events:none}
+.gr-svg text.gr-n{font-size:11px;font-weight:700;fill:var(--ink);font-variant-numeric:tabular-nums;paint-order:stroke;stroke:var(--surface);stroke-width:3}
 .gr-mix{margin-top:6px}
 .gr-mix text.gr-mixh{font-size:10.5px;fill:var(--muted)}
 .gr-mix text.gr-mixp{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;fill:var(--surface)}
@@ -1862,14 +1861,7 @@ function sceneGrowth(){
         'preserveAspectRatio="xMidYMid meet" role="img">'+
         '<g class="gr-land">'+D.flow.shapes.map(s=>'<path d="'+s.d+
           '" fill="var(--land)" stroke="var(--surface)" stroke-width="0.7"/>').join('')+'</g>'+
-        '<g class="gr-bub"></g>'+
-        // The coastlines again, over the circles, as outline only. The fills have
-        // to be opaque for the three colours to stay apart, which buries the
-        // islands the two biggest circles sit on; this puts them back without
-        // washing the colour out. Hispaniola reads through the Dominican disc.
-        '<g class="gr-edge">'+D.flow.shapes.map(s=>'<path d="'+s.d+
-          '" fill="none" stroke="var(--surface)" stroke-width="0.7"/>').join('')+'</g>'+
-        '<g class="gr-lab"></g>'+
+        '<g class="gr-bub"></g><g class="gr-lab"></g>'+
         '<text class="gr-when" x="'+rx+'" y="'+(f.y+40).toFixed(1)+'" text-anchor="end"></text>'+
         '<text class="gr-tot" x="'+rx+'" y="'+(f.y+62).toFixed(1)+'" text-anchor="end"></text>'+
         '</svg>'+
@@ -1887,14 +1879,13 @@ function sceneGrowth(){
 // with hitters and pitchers two blocks further down. It shows the CURRENT
 // period, never the running total, because a cumulative share is an average
 // that lags: Venezuela ends at 37% of the period and only 32% of the census.
-// The map and the strip now read as one figure, so they share a key: the
-// Dominican Republic orange, Venezuela teal, everyone else the dark neutral.
-// The circles are opaque because a tint is not a colour. Drawn at the old 42%
-// over the land these three collapse -- teal against the neutral falls to 6.3
-// in normal vision against a floor of 15, and to 4.1 under deuteranopia -- so
-// the fill carries no identity at all once it is washed out. At full strength
-// the trio clears every floor, and a surface ring keeps overlapping circles
-// apart instead of the transparency doing it.
+// The map and the strip read as one figure, so they share a key: the Dominican
+// Republic orange, Venezuela teal, everyone else the dark neutral. The fill
+// stays a tint so the coastline underneath still reads, which means the fill
+// cannot be what tells the three apart -- composited at 45% over the land,
+// teal against the neutral falls to 6.3 where the floor is 15. The ring carries
+// the colour instead, at full strength and 2px, where the same three clear
+// every floor in normal vision and under all three dichromacies.
 function grHue(c){
   return c==='Dominican Republic' ? 'var(--chart-h)'
        : c==='Venezuela'          ? 'var(--chart-p)'
@@ -1952,10 +1943,10 @@ function grPaint(root, animate){
     .sort((a,b)=>val(b)-val(a));           // big circles first, small on top
   svg.select('.gr-bub').selectAll('circle').data(rows,d=>d.country)
     .join(en=>en.append('circle').attr('cx',d=>d.x).attr('cy',d=>d.y).attr('r',0)
-             .attr('stroke','var(--surface)').attr('stroke-width',1.5)
+             .attr('fill-opacity',0.45).attr('stroke-width',2)
              .call(s=>s.append('title')),
           up=>up, ex=>tr(ex).attr('r',0).remove())
-    .attr('fill',d=>grHue(d.country))
+    .attr('fill',d=>grHue(d.country)).attr('stroke',d=>grHue(d.country))
     .call(s=>s.select('title').text(d=>d.country+': '+
         Math.round(val(d)).toLocaleString()+
         (grMode==='cum'?' signed through ':' signed in ')+G.periods[grIdx()].label))
@@ -2027,8 +2018,7 @@ function grPaint(root, animate){
         .attr('x1',d=>d.lead?d.lead[0].toFixed(1):0).attr('y1',d=>d.lead?d.lead[1].toFixed(1):0)
         .attr('x2',d=>d.lead?d.lead[2].toFixed(1):0).attr('y2',d=>d.lead?d.lead[3].toFixed(1):0);
       s.select('.gr-n').attr('display',d=>d.inside?null:'none')
-        .attr('x',d=>d.cx.toFixed(1)).attr('y',d=>(d.cy+2).toFixed(1))
-        .style('stroke',d=>grHue(d.country)).text(d=>d.txt);
+        .attr('x',d=>d.cx.toFixed(1)).attr('y',d=>(d.cy+2).toFixed(1)).text(d=>d.txt);
       s.select('.gr-c').attr('x',d=>d.ax.toFixed(1))
         .attr('y',d=>d.ty.toFixed(1)).text(d=>d.text);
     });
