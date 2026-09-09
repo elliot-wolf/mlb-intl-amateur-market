@@ -210,6 +210,7 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .gr-svg text.gr-when{font-size:26px;font-weight:700;fill:var(--ink);font-variant-numeric:tabular-nums}
 .gr-svg text.gr-tot{font-size:13px;fill:var(--muted);font-variant-numeric:tabular-nums}
 .gr-svg text.gr-n{font-size:11px;font-weight:700;fill:var(--surface);font-variant-numeric:tabular-nums;paint-order:stroke;stroke:var(--chart-p);stroke-width:3}
+.gr-svg .gr-edge{opacity:.55;pointer-events:none}
 .gr-mix{margin-top:6px}
 .gr-mix text.gr-mixh{font-size:10.5px;fill:var(--muted)}
 .gr-mix text.gr-mixp{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;fill:var(--surface)}
@@ -1861,7 +1862,14 @@ function sceneGrowth(){
         'preserveAspectRatio="xMidYMid meet" role="img">'+
         '<g class="gr-land">'+D.flow.shapes.map(s=>'<path d="'+s.d+
           '" fill="var(--land)" stroke="var(--surface)" stroke-width="0.7"/>').join('')+'</g>'+
-        '<g class="gr-bub"></g><g class="gr-lab"></g>'+
+        '<g class="gr-bub"></g>'+
+        // The coastlines again, over the circles, as outline only. The fills have
+        // to be opaque for the three colours to stay apart, which buries the
+        // islands the two biggest circles sit on; this puts them back without
+        // washing the colour out. Hispaniola reads through the Dominican disc.
+        '<g class="gr-edge">'+D.flow.shapes.map(s=>'<path d="'+s.d+
+          '" fill="none" stroke="var(--surface)" stroke-width="0.7"/>').join('')+'</g>'+
+        '<g class="gr-lab"></g>'+
         '<text class="gr-when" x="'+rx+'" y="'+(f.y+40).toFixed(1)+'" text-anchor="end"></text>'+
         '<text class="gr-tot" x="'+rx+'" y="'+(f.y+62).toFixed(1)+'" text-anchor="end"></text>'+
         '</svg>'+
