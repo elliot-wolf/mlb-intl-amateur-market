@@ -122,7 +122,7 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .sc-svg text.fn-count{font-size:34px;fill:var(--accent-ink);font-variant-numeric:tabular-nums;
   letter-spacing:-.02em}
 .sc-svg text.fn-lab{font-family:inherit;font-size:12px;fill:var(--muted)}
-.sc-svg text.fn-pct{font-size:20px;fill:var(--ink);font-variant-numeric:tabular-nums}
+.sc-svg text.fn-pct{font-size:17px;fill:var(--muted);font-variant-numeric:tabular-nums}
 .sc-svg text.fn-l1{font-family:inherit;font-size:12.5px;fill:var(--ink-2)}
 .sc-svg text.fn-l2{font-family:inherit;font-size:11.5px;fill:var(--muted)}
 .sc-svg .lg text{fill:var(--ink-2);font-size:10.5px}
@@ -1286,7 +1286,7 @@ function sceneFunnel(active, C){
   // Push it as far right as the plot allows, then back off only as far as the
   // bars in the rows it sits beside actually require. VLW_ is the value label
   // that follows each bar; the block has to clear that, not just the bar.
-  const NW_=216, NH_=104, VLW_=46, GAP_=12;   // three lines now, not two
+  const NW_=216, NH_=76, VLW_=46, GAP_=12, MONO34_=20.4;  // 0.6em advance at 34px
   let ny=plotH-8-NH_, h=plotH;
   const r0=Math.max(0, Math.floor((ny-pad.t)/slot));
   let wmax=0;
@@ -1318,17 +1318,22 @@ function sceneFunnel(active, C){
   // of the other, so walk up from the last rung while the block still fits.
   const n=funnelNote(C);
   const share=(100*L[active].n/total).toFixed(1)+'%';
+  const endShare=(100*L[L.length-1].n/total).toFixed(1)+'%';
   o+='<rect class="fn-rule" x="'+nx.toFixed(1)+'" y="'+ny.toFixed(1)+
        '" width="2" height="'+NH_+'" rx="1"/>'+
-     // "1 in x" sits above the percentage rather than between it and its
-     // caption, so the percentage and the rung it names stay adjacent and read
-     // as one line. Its slot is held open on every rung so the figure below it
-     // does not jump when it arrives on the last one.
+     // "1 in x" rides on the figure's own baseline rather than taking a line of
+     // its own. Stacked above it, its slot had to be held open on all seven rungs
+     // to stop the figure jumping when it arrived, and six of those rungs then
+     // carried an empty band. Here nothing is reserved: the block is the same
+     // height throughout and the two readings of the same number sit together.
+     // Its x comes from the LAST rung's figure, which is the only one it ever
+     // appears beside, so it never has to be repositioned on a stage change.
+     '<text class="fn-count" x="'+(nx+16).toFixed(1)+'" y="'+(ny+40).toFixed(1)+'">'+share+'</text>'+
      '<g class="fn-top" fill-opacity="'+((active===L.length-1)?'1':'0')+'">'+
-     '<text class="fn-pct" x="'+(nx+16).toFixed(1)+'" y="'+(ny+20).toFixed(1)+'">'+n.pct+'</text></g>'+
-     '<text class="fn-count" x="'+(nx+16).toFixed(1)+'" y="'+(ny+62).toFixed(1)+'">'+share+'</text>'+
+     '<text class="fn-pct" x="'+(nx+16+MONO34_*endShare.length+16).toFixed(1)+
+     '" y="'+(ny+40).toFixed(1)+'">'+n.pct+'</text></g>'+
      '<g class="fn" fill-opacity="'+((active>0)?'1':'0')+'">'+
-     '<text class="fn-l1"  x="'+(nx+16).toFixed(1)+'" y="'+(ny+86).toFixed(1)+'">'+
+     '<text class="fn-l1"  x="'+(nx+16).toFixed(1)+'" y="'+(ny+64).toFixed(1)+'">'+
      funnelCap(C,active)+'</text></g>';
   // The draft ladder is drawn identically to the international one; the only
   // place the two routes in are worth separating is the age timeline, where
