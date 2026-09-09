@@ -772,7 +772,12 @@ const $ = s => document.querySelector(s);
    removed rather than left to render empty. */
 const PUBLIC = !!D.public;
 if(PUBLIC){
-  document.querySelectorAll('#t-index, #p-index').forEach(el=>el.remove());
+  // Remove the nav button only. The panel and its filter controls stay in the
+  // DOM: page setup wires #f-c, #f-p and #f-t at load, and deleting them threw
+  // on the first lookup, which aborted the rest of the script and left every
+  // tab blank. Unreachable is enough -- it holds no rows on this build.
+  const b=document.querySelector('#t-index'); if(b) b.remove();
+  const pnl=document.querySelector('#p-index'); if(pnl) pnl.hidden=true;
 }
 /* ---------- tabs ---------- */
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
