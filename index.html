@@ -1804,7 +1804,24 @@ function sceneYear(){
 //
 // sqrt scaling because area is what the eye reads: a country with four times
 // the signings gets four times the ink, not four times the radius.
-let grStep=0, grTimer=null, grMode='cum', grDrawn=false;
+let grPos=0, grTimer=null, grMode='cum', grDrawn=false;
+// Counts exist once per signing period, so the frames between periods are
+// interpolated: the motion is continuous, the data underneath is still the
+// twelve measured points. Real signing dates cannot drive this. 878 players
+// carry no date at all, and they are not spread evenly -- 34% of the 2012
+// period and 29% of 2014 against near zero from 2015 on -- so a date-driven
+// clock would thin out exactly the early periods this chart compares against.
+// Dates would also make it chunkier, not smoother: the share of a period
+// signed on its opening day climbs from 1.8% in 2009 to 48.9% in 2019, so
+// half a year would land in a single frame.
+function grAt(arr,pos){
+  const i=Math.max(0,Math.min(arr.length-1,Math.floor(pos)));
+  const j=Math.min(i+1,arr.length-1);
+  return arr[i]+(arr[j]-arr[i])*(pos-i);
+}
+function grIdx(){
+  return Math.max(0,Math.min(grData().periods.length-1,Math.round(grPos)));
+}
 function grData(){ return D.growth; }
 const GR_R=52;
 // The flow map is framed for thirty clubs spread across North America. This one
@@ -1853,17 +1870,17 @@ function sceneGrowth(){
 function grMix(root, DUR){
   const G=grData(), svg=d3.select(root).select('.gr-mix');
   if(svg.empty()) return;
-  const at=n=>{const c=G.countries.find(d=>d.country===n); return c?(c.per[grStep]||0):0;};
+  const at=n=>{const c=G.countries.find(d=>d.country===n); return c?grAt(c.per,grPos):0;};
   const vz=at('Venezuela'), dr=at('Dominican Republic');
-  const tot=G.totals[grStep]||1;
+  const tot=grAt(G.totals,grPos)||1;
   const parts=[{k:'vz',   l:'Venezuela',          v:vz,        c:'var(--chart-p)', t:'var(--surface)'},
-               {k:'dr',   l:'Dominican Republic', v:dr,        c:'var(--line-2)',  t:'var(--ink)'},
+               {k:'dr',   l:'Dominican Republic', v:dr,        c:'var(--chart-h)', t:'var(--surface)'},
                {k:'rest', l:'Everywhere else',    v:tot-vz-dr, c:'var(--land)',    t:'var(--ink-2)'}];
   const L=8, IW=744, Y=24, BH=28, GAP=2;
   let x=L;
   parts.forEach(p=>{ p.x=x; p.w=Math.max(IW*p.v/tot,1); p.pc=100*p.v/tot; x+=p.w; });
   const tr=sel=>DUR?sel.transition().duration(DUR).ease(d3.easeCubicOut):sel;
-  svg.select('.gr-mixh').text('Share of the '+G.periods[grStep].label+' signing period');
+  svg.select('.gr-mixh').text('Share of the '+G.periods[grIdx()].label+' signing period');
   const g=svg.select('.gr-mixg').selectAll('g').data(parts,d=>d.k)
     .join(en=>{const q=en.append('g');
       q.append('rect').attr('y',Y).attr('height',BH).attr('rx',3);
@@ -1880,8 +1897,9 @@ function grMix(root, DUR){
   g.select('.gr-mixl').text(d=>d.pc>=11?d.l:'');
   g.select('rect').select('title').remove();
   g.select('rect').append('title')
-    .text(d=>d.l+': '+d.v.toLocaleString()+' of '+tot.toLocaleString()+
-             ' ('+d.pc.toFixed(1)+'%) in '+G.periods[grStep].label);
+    .text(d=>d.l+': '+Math.round(d.v).toLocaleString()+' of '+
+             Math.round(tot).toLocaleString()+' ('+d.pc.toFixed(1)+'%) in '+
+             G.periods[grIdx()].label);
 }
 function grMax(){
   const G=grData(); let m=0;
@@ -1895,7 +1913,7 @@ function grPaint(root, animate){
   if(svg.empty()) return;
   const R=GR_R, mx=grMax();
   const r=v=>v<=0?0:R*Math.sqrt(v/mx);
-  const val=c=>(grMode==='cum'?c.cum:c.per)[grStep]||0;
+  const val=c=>grAt(grMode==='cum'?c.cum:c.per, grPos);
   const DUR=animate?600:0;
   const tr=sel=>DUR?sel.transition().duration(DUR).ease(d3.easeCubicOut):sel;
   const rows=G.countries.filter(c=>val(c)>0)
@@ -1906,8 +1924,9 @@ function grPaint(root, animate){
              .attr('stroke','var(--chart-p)').attr('stroke-width',1.2)
              .call(s=>s.append('title')),
           up=>up, ex=>tr(ex).attr('r',0).remove())
-    .call(s=>s.select('title').text(d=>d.country+': '+val(d).toLocaleString()+
-        (grMode==='cum'?' signed through ':' signed in ')+G.periods[grStep].label))
+    .call(s=>s.select('title').text(d=>d.country+': '+
+        Math.round(val(d)).toLocaleString()+
+        (grMode==='cum'?' signed through ':' signed in ')+G.periods[grIdx()].label))
     .call(s=>tr(s).attr('r',d=>r(val(d))));
   // Label the top eight by volume. The count sits inside the circle when the
   // circle can hold it and moves under the circle when it cannot, so a small
@@ -1915,7 +1934,7 @@ function grPaint(root, animate){
   // nothing at all in the opening period, when the biggest circle is 15.4.
   const FR=grFrame(), big=rows.map(d=>({x:d.x, y:d.y, r:r(val(d))}));
   const lab=rows.slice(0,8).map((d,i)=>{
-    const rr=big[i].r, txt=val(d).toLocaleString();
+    const rr=big[i].r, txt=Math.round(val(d)).toLocaleString();
     const o={country:d.country, cx:d.x, cy:d.y, rr:rr, txt:txt, lead:null,
              inside:rr>=txt.length*3.1+5};
     o.host=big.find(b=>b.r>rr+1 && Math.hypot(d.x-b.x,d.y-b.y)<b.r)||null;
@@ -1981,22 +2000,29 @@ function grPaint(root, animate){
         .attr('y',d=>d.ty.toFixed(1)).text(d=>d.text);
     });
   const tot=rows.reduce((a,b)=>a+val(b),0);
-  svg.select('.gr-when').text(G.periods[grStep].label);
-  svg.select('.gr-tot').text(tot.toLocaleString()+(grMode==='cum'?' signed to date':' signed'));
+  svg.select('.gr-when').text(G.periods[grIdx()].label);
+  svg.select('.gr-tot').text(Math.round(tot).toLocaleString()+
+    (grMode==='cum'?' signed to date':' signed'));
   grMix(root, DUR);
-  const sc=root.querySelector('.gr-scrub'); if(sc) sc.value=grStep;
+  const sc=root.querySelector('.gr-scrub'); if(sc) sc.value=grPos;
 }
 function grPlay(root){
   grStop(root);
-  if(grStep>=grData().periods.length-1) grStep=0;
-  grTimer=setInterval(()=>{
-    if(grStep>=grData().periods.length-1){ grStop(root); return; }
-    grStep++; grPaint(root,true);
-  },820);
+  const n=grData().periods.length-1;
+  if(grPos>=n-0.001) grPos=0;
+  // One clock advancing a continuous position, repainting every frame, instead
+  // of a step timer firing a 600ms transition and then waiting: the old loop
+  // eased into a full stop twelve times, which is what read as chunky.
+  const from=grPos, RATE=0.85;      // signing periods per second
+  grTimer=d3.timer(el=>{
+    grPos=Math.min(n, from+el/1000*RATE);
+    grPaint(root,false);
+    if(grPos>=n) grStop(root);
+  });
   const b=root.querySelector('.gr-play'); if(b) b.textContent='Pause';
 }
 function grStop(root){
-  if(grTimer){ clearInterval(grTimer); grTimer=null; }
+  if(grTimer){ grTimer.stop(); grTimer=null; }
   const b=root.querySelector('.gr-play'); if(b) b.textContent='Play';
 }
 function wireGrowth(root){
@@ -2009,10 +2035,10 @@ function wireGrowth(root){
   bar.innerHTML='<button class="btn gr-play" type="button">Play</button>'+
     '<label class="gr-tog"><input type="checkbox" class="gr-per"> one period at a time</label>'+
     '<input type="range" class="gr-scrub" min="0" max="'+(G.periods.length-1)+
-    '" step="1" value="0" aria-label="Signing period">';
+    '" step="0.02" value="0" aria-label="Signing period">';
   fig.insertBefore(bar, fig.firstChild);
   bar.querySelector('.gr-play').onclick=()=>{ grTimer?grStop(root):grPlay(root); };
-  bar.querySelector('.gr-scrub').oninput=e=>{ grStop(root); grStep=+e.target.value; grPaint(root,true); };
+  bar.querySelector('.gr-scrub').oninput=e=>{ grStop(root); grPos=+e.target.value; grPaint(root,false); };
   bar.querySelector('.gr-per').onchange=e=>{
     grMode=e.target.checked?'per':'cum'; grPaint(root,true); };
   grPaint(root,false);
