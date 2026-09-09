@@ -1259,6 +1259,18 @@ function funnelNote(C){
   const L=C.ladder, total=L[0].n, d=L[L.length-1];
   return {pct:'1 in '+Math.round(total/d.n), l1:'of '+C.unit+' '+C.reach};
 }
+// The running figure used to read "34.0%" and nothing else on every rung but
+// the last, which is a number with no question attached to it. The rung it
+// belongs to now sits underneath it, so the figure reads as a sentence the
+// whole way down. Rung 0 is the cohort itself and gets no line: "100.0% of
+// signed amateurs reach Signed" says nothing.
+function funnelReach(C, i){
+  const L=C.ladder;
+  if(i===L.length-1) return C.reach;
+  const lab=L[i].label;
+  return 'reach '+(/^rookie$/i.test(lab) ? 'Rookie ball' : lab);
+}
+function funnelCap(C, i){ return 'of '+C.unit+' '+funnelReach(C,i); }
 function sceneFunnel(active, C){
   C=C||LADDERS.intl;
   const L=C.ladder, total=L[0].n;
@@ -1274,7 +1286,7 @@ function sceneFunnel(active, C){
   // Push it as far right as the plot allows, then back off only as far as the
   // bars in the rows it sits beside actually require. VLW_ is the value label
   // that follows each bar; the block has to clear that, not just the bar.
-  const NW_=216, NH_=92, VLW_=46, GAP_=12;
+  const NW_=216, NH_=104, VLW_=46, GAP_=12;   // three lines now, not two
   let ny=plotH-8-NH_, h=plotH;
   const r0=Math.max(0, Math.floor((ny-pad.t)/slot));
   let wmax=0;
@@ -1308,10 +1320,16 @@ function sceneFunnel(active, C){
   const share=(100*L[active].n/total).toFixed(1)+'%';
   o+='<rect class="fn-rule" x="'+nx.toFixed(1)+'" y="'+ny.toFixed(1)+
        '" width="2" height="'+NH_+'" rx="1"/>'+
-     '<text class="fn-count" x="'+(nx+16).toFixed(1)+'" y="'+(ny+32).toFixed(1)+'">'+share+'</text>'+
-     '<g class="fn" fill-opacity="'+((active===L.length-1)?'1':'0')+'">'+
-     '<text class="fn-pct" x="'+(nx+16).toFixed(1)+'" y="'+(ny+66).toFixed(1)+'">'+n.pct+'</text>'+
-     '<text class="fn-l1"  x="'+(nx+16).toFixed(1)+'" y="'+(ny+86).toFixed(1)+'">'+n.l1+'</text></g>';
+     // "1 in x" sits above the percentage rather than between it and its
+     // caption, so the percentage and the rung it names stay adjacent and read
+     // as one line. Its slot is held open on every rung so the figure below it
+     // does not jump when it arrives on the last one.
+     '<g class="fn-top" fill-opacity="'+((active===L.length-1)?'1':'0')+'">'+
+     '<text class="fn-pct" x="'+(nx+16).toFixed(1)+'" y="'+(ny+20).toFixed(1)+'">'+n.pct+'</text></g>'+
+     '<text class="fn-count" x="'+(nx+16).toFixed(1)+'" y="'+(ny+62).toFixed(1)+'">'+share+'</text>'+
+     '<g class="fn" fill-opacity="'+((active>0)?'1':'0')+'">'+
+     '<text class="fn-l1"  x="'+(nx+16).toFixed(1)+'" y="'+(ny+86).toFixed(1)+'">'+
+     funnelCap(C,active)+'</text></g>';
   // The draft ladder is drawn identically to the international one; the only
   // place the two routes in are worth separating is the age timeline, where
   // a high schooler and a college senior are three years apart at entry.
@@ -1323,7 +1341,12 @@ function applyFunnelStage(root, active, C){
   C=C||LADDERS.intl;
   applyClimbStage(root, active);
   const g=root.querySelector('g.fn');
-  if(g) g.setAttribute('fill-opacity', active===C.ladder.length-1 ? '1' : '0');
+  if(g) g.setAttribute('fill-opacity', active>0 ? '1' : '0');
+  const top=root.querySelector('g.fn-top');
+  if(top) top.setAttribute('fill-opacity', active===C.ladder.length-1 ? '1' : '0');
+  // scoped through g.fn: sceneClimb uses fn-l1 too, further down the block
+  const cap=root.querySelector('g.fn text.fn-l1');
+  if(cap) cap.textContent=funnelCap(C, active);
 
   root.querySelectorAll('[data-lvl]').forEach(el=>{
     const now = +el.dataset.lvl === active;
