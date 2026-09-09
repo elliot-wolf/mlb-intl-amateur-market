@@ -1827,10 +1827,17 @@ function drawStory(){
 // The story tab takes the untagged steps; anything tagged goes to its own panel.
 // Blocks keep their index into the single STEPS array, so paintStage resolves a
 // block the same way wherever it was mounted.
+// Which story blocks the published page runs. The others stay in the file,
+// fully built and fully wired -- restoring one is adding its scene name here.
+// A first public version earns attention with three beats it can support, not
+// with seven it has to caption.
+const V1_STORY=['funnel','ages','role'];
 function renderBlocks(sel, tab){
   const host=$(sel); if(!host) return;
   host.innerHTML=STEPS.map((st,i)=>[st,i])
-    .filter(pair=>(pair[0].tab||null)===tab).map(pair=>{
+    .filter(pair=>(pair[0].tab||null)===tab)
+    .filter(pair=>tab!==null||!V1_STORY||V1_STORY.indexOf(pair[0].scene)>=0)
+    .map(pair=>{
     const st=pair[0], i=pair[1];
     const sg = st.stages ? st.stages[0] : st;
     // the funnel prints its figure inside the plot, so it needs no header row
