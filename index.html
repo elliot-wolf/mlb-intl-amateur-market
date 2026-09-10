@@ -137,9 +137,10 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .sc-jrny circle.jr-base{fill:var(--line-2)}
 .sc-jrny g.jr-stop{opacity:0;pointer-events:none;transition:opacity .45s ease}
 .sc-jrny g.jr-stop.on{opacity:1;pointer-events:auto}
-.sc-jrny text.jr-sub{font-family:inherit;font-size:11.5px;fill:var(--muted)}
+.sc-jrny text.jr-sub{font-family:inherit;font-size:13px;font-weight:700;fill:var(--ink-2)}
 .fig-h{font-size:15px;font-weight:700;color:var(--ink);margin:0 0 3px;line-height:1.35}
-.fig-rule{width:320px;max-width:70%;height:3px;border-radius:1.5px;margin:0 0 9px;
+.fig-h-lg{font-size:20px;letter-spacing:-.015em;margin-bottom:5px}
+.fig-rule{width:320px;max-width:70%;height:3px;border-radius:1.5px;margin:0 0 14px;
   background:linear-gradient(90deg,var(--chart-h) 0 50%,var(--chart-p) 50% 100%)}
 .fig-s{font-size:11.5px;color:var(--muted);margin:0 0 12px;max-width:82ch;line-height:1.5}
 .fig-vz{color:var(--chart-p)}
@@ -1512,9 +1513,7 @@ function sceneJourney(lit){
         // The rung above and the stops below are the same level counted two
         // ways, and side by side they read as a contradiction. Say so here,
         // where the question gets asked, not in the footnote.
-        '<text class="jr-sub" x="'+L+'" y="14">Summer league is the one stop '+
-        'the ladder above cannot show: it is not a step on the way up, because '+
-        'half of these players appear both there and in the US.</text>'+
+        '<text class="jr-sub" x="'+L+'" y="16">Development Timeline</text>'+
         '<line class="jr-track" x1="'+x0.toFixed(1)+'" y1="'+ty+
         '" x2="'+x1.toFixed(1)+'" y2="'+ty+'"/>'+
         // The lit track is one line drawn over the grey one, revealed by
@@ -1693,15 +1692,8 @@ function jrnyFoot(){
 // is orange and the timeline below it is teal, so the bar under the heading
 // says which two figures this box holds before either has been read.
 function funnelHead(){
-  const L=SY.ladder, J=SY.journey||[], end=J.length?J[J.length-1]:null;
-  const n0=L[0].n, mlb=L[L.length-1].n;
-  return '<p class="fig-h">The Development Timeline of an International Amateur</p>'+
-    '<div class="fig-rule"></div>'+
-    '<p class="fig-s">'+n0.toLocaleString()+' players signed between '+
-    SY.outcome_window[0]+' and '+SY.outcome_window[1]+', followed through '+
-    ((SY.per_year_meta&&SY.per_year_meta.through)||2026)+'. '+
-    (100*mlb/n0).toFixed(1)+'% reached the majors'+
-    (end?', a median of '+end.lag.toFixed(0)+' years after signing':'')+'.</p>';
+  return '<p class="fig-h fig-h-lg">The Journey of an International Amateur</p>'+
+    '<div class="fig-rule"></div>';
 }
 function funnelNote(C){
   const L=C.ladder, total=L[0].n, d=L[L.length-1];
