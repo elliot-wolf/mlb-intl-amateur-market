@@ -143,6 +143,10 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .fig-s{font-size:11.5px;color:var(--muted);margin:0 0 12px;max-width:82ch;line-height:1.5}
 .fig-vz{color:var(--chart-p)}
 .fig-dr{color:var(--chart-h)}
+.sc-ages text.ag-in{font-size:12.5px;font-weight:700;fill:var(--surface);
+  font-variant-numeric:tabular-nums}
+.sc-ages line.ag-ref{stroke:var(--ink-2);stroke-width:1.5;stroke-dasharray:5 4}
+.sc-ages text.ag-refl{font-family:inherit;font-size:10px;fill:var(--ink-2)}
 .sc-jrny text.jr-age{font-size:20px;fill:var(--ink-2);font-variant-numeric:tabular-nums}
 .sc-jrny text.jr-age.on{fill:var(--chart-h);font-weight:600}
 .sc-jrny text.jr-name{font-family:inherit;font-size:11.5px;font-weight:600;fill:var(--ink-2)}
@@ -2564,16 +2568,18 @@ function ageFoot(){
   const say=b=>b.band.indexOf('under')===0 ? b.band
             : b.band.indexOf('+')>0 ? 'at '+b.band.replace('+','')+' or older'
             : 'at '+b.band;
-  return lead+'Hitters are '+base.toFixed(1)+'% of all signings, the split drawn '+
-    'in the bar above, and every column starts there before finding its own. '+
-    'The spread runs from '+(100*hi.hit_share).toFixed(1)+'% of the '+
-    hi.n.toLocaleString()+' signed '+say(hi)+' down to '+
-    (100*lo.hit_share).toFixed(1)+'% of the '+lo.n.toLocaleString()+' signed '+
-    say(lo)+'. Each column is one age band split by position, so every column '+
-    'reaches 100%; the counts beneath show how far the bands differ in size. '+
-    'Hitters are '+SY.pos[0].n.toLocaleString()+' of '+
-    (SY.pos[0].n+SY.pos[1].n).toLocaleString()+' signings, pitchers '+
-    SY.pos[1].n.toLocaleString()+'.';
+  return lead+'The dashed rule is the whole market: hitters are '+
+    Math.round(base)+'% of all '+
+    (SY.pos[0].n+SY.pos[1].n).toLocaleString()+' signings, '+
+    SY.pos[0].n.toLocaleString()+' against '+SY.pos[1].n.toLocaleString()+
+    '. Every column starts on it and settles where its own age band sits, so '+
+    'the distance a column travels is its distance from the market. The spread '+
+    'runs from '+Math.round(100*hi.hit_share)+'% of the '+hi.n.toLocaleString()+
+    ' signed '+say(hi)+' down to '+Math.round(100*lo.hit_share)+'% of the '+
+    lo.n.toLocaleString()+' signed '+say(lo)+'. Each column is one age band '+
+    'split by position, so every column reaches 100%; the counts beneath show '+
+    'how far the bands differ in size. Percentages are rounded, and the pair is '+
+    'taken from the hitter share so the two always total 100.';
 }
 // 100% stacked columns: each age band is one whole, split by position, so the
 // bands are read against each other rather than each summing to 100% on its
@@ -2586,40 +2592,26 @@ function ageFoot(){
 // they need 830px against a 950px viewport; apart they needed 1,171px.
 function sceneAges(){
   const H=SY.pos[0], P=SY.pos[1], tot=H.n+P.n, hs=H.n/tot;
-  const w=760, pad={l:26,r:26};
-  const iw=w-pad.l-pad.r, GAP=2;
-
-  const B0=SY.age_bands;
-  const yng=B0[0], old=B0[B0.length-1];
+  const B=SY.age_bands, w=760, h=340, GAP=2;
+  // The overall split used to sit in its own horizontal bar above these
+  // columns, which read as a different chart rather than as their reference.
+  // It is a rule across them now: every boundary is above or below the market,
+  // the distance is the deviation, and the animation starts on the line.
+  // Right margin holds the rule's label.
+  const p2={l:26,t:44,r:104,b:66};
+  const pw=w-p2.l-p2.r, ph=h-p2.t-p2.b, slot=pw/B.length, cw=Math.min(88,slot-30);
+  const my=p2.t+ph*(1-hs);                       // the market boundary
+  const pc=v=>Math.round(100*v);                 // whole numbers only, and the
+  const pcP=v=>100-pc(v);                        // pair always sums to 100
+  const yng=B[0], old=B[B.length-1];
   let o='<p class="fig-h"><span class="fig-dr">Hitters</span> sign younger than '+
     '<span class="fig-vz">pitchers</span>.</p>'+
-    '<p class="fig-s">'+(100*yng.hit_share).toFixed(1)+'% of the '+
-    yng.n.toLocaleString()+' signed '+yng.band+' are hitters, against '+
-    (100*old.hit_share).toFixed(1)+'% of the '+old.n.toLocaleString()+
-    ' signed at '+old.band.replace('+','')+' or older. Every column below starts '+
-    'at the market split and settles on its own.</p>';
-  // the market split, compact, as the reference the columns are read against
-  const sh=104, sbh=34, sy=34;
-  o+='<svg class="sc-svg sc-strip" viewBox="0 0 '+w+' '+sh+'" preserveAspectRatio="xMidYMid meet">'+
-    '<defs><clipPath id="spill"><rect x="'+pad.l+'" y="'+sy+'" width="'+iw+'" height="'+sbh+
-    '" rx="6"/></clipPath></defs>'+
-    '<text class="fn-l2" x="'+pad.l+'" y="16">All signings</text>'+
-    '<g clip-path="url(#spill)">'+
-    '<rect class="mk" x="'+pad.l+'" y="'+sy+'" width="'+(iw*hs-GAP).toFixed(1)+'" height="'+sbh+
-    '" fill="var(--chart-h)"><title>Hitters: '+H.n.toLocaleString()+' of '+tot.toLocaleString()+
-    ' ('+(100*hs).toFixed(1)+'%)</title></rect>'+
-    '<rect class="mk" x="'+(pad.l+iw*hs).toFixed(1)+'" y="'+sy+'" width="'+(iw*(1-hs)).toFixed(1)+
-    '" height="'+sbh+'" fill="var(--chart-p)"><title>Pitchers: '+P.n.toLocaleString()+' of '+
-    tot.toLocaleString()+' ('+(100*(1-hs)).toFixed(1)+'%)</title></rect></g>'+
-    '<text class="vlab" x="'+(pad.l+iw*hs/2).toFixed(1)+'" y="'+(sy+sbh+18)+
-    '" text-anchor="middle">'+(100*hs).toFixed(1)+'%</text>'+
-    '<text class="vlab" x="'+(pad.l+iw*(hs+(1-hs)/2)).toFixed(1)+'" y="'+(sy+sbh+18)+
-    '" text-anchor="middle">'+(100*(1-hs)).toFixed(1)+'%</text></svg>';
-
-  // the age bands beneath it
-  const B=SY.age_bands, h=340, p2={l:26,t:44,r:26,b:66};
-  const ph=h-p2.t-p2.b, slot=iw/B.length, cw=Math.min(88, slot-30);
-  o+='<svg class="sc-svg sc-ages" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="xMidYMid meet"><defs>';
+    '<p class="fig-s">'+pc(yng.hit_share)+'% of the '+yng.n.toLocaleString()+
+    ' signed '+yng.band+' are hitters, against '+pc(old.hit_share)+'% of the '+
+    old.n.toLocaleString()+' signed at '+old.band.replace('+','')+' or older. '+
+    'Every column starts on the market line and settles on its own.</p>';
+  o+='<svg class="sc-svg sc-ages" viewBox="0 0 '+w+' '+h+
+     '" preserveAspectRatio="xMidYMid meet"><defs>';
   B.forEach((d,i)=>{ const x=p2.l+slot*i+(slot-cw)/2;
     o+='<clipPath id="ac'+i+'"><rect x="'+x.toFixed(1)+'" y="'+p2.t+'" width="'+cw+
        '" height="'+ph+'" rx="6"/></clipPath>'; });
@@ -2628,36 +2620,44 @@ function sceneAges(){
      '<text x="'+(p2.l+14)+'" y="16">Hitters</text>'+
      '<rect x="'+(p2.l+74)+'" y="8" width="9" height="9" rx="2" fill="var(--chart-p)"/>'+
      '<text x="'+(p2.l+88)+'" y="16">Pitchers</text></g>';
-  // Each rect carries where it ends and where it starts, so the animation
-  // needs no knowledge of the layout that produced them.
   const hh0=ph*hs;
   B.forEach((d,i)=>{
-    const x=p2.l+slot*i+(slot-cw)/2, hh=ph*d.hit_share;
-    const fo='1', to='1';
+    const x=p2.l+slot*i+(slot-cw)/2, hh=ph*d.hit_share, cx=(x+cw/2).toFixed(1);
+    const hy=p2.t+ph-hh, py=p2.t;
     o+='<g clip-path="url(#ac'+i+')">'+
-       '<rect class="mk v" data-col="'+i+'" data-y="'+(p2.t+ph-hh).toFixed(1)+
-       '" data-hh="'+hh.toFixed(1)+'" data-y0="'+(p2.t+ph-hh0).toFixed(1)+
-       '" data-h0="'+hh0.toFixed(1)+'" fill-opacity="'+fo+'" x="'+x.toFixed(1)+'" y="'+
-       (p2.t+ph-hh).toFixed(1)+'" width="'+cw+'" height="'+hh.toFixed(1)+
-       '" fill="var(--chart-h)"><title>'+d.band+', hitters: '+d.hitters.toLocaleString()+
-       ' of '+d.n.toLocaleString()+' ('+(100*d.hit_share).toFixed(1)+'%)</title></rect>'+
-       '<rect class="mk v" data-col="'+i+'" data-y="'+p2.t+'" data-hh="'+
-       (ph-hh-GAP).toFixed(1)+'" data-y0="'+p2.t+'" data-h0="'+
-       (ph-hh0-GAP).toFixed(1)+'" fill-opacity="'+fo+'" x="'+x.toFixed(1)+'" y="'+
-       p2.t+'" width="'+cw+'" height="'+(ph-hh-GAP).toFixed(1)+
-       '" fill="var(--chart-p)"><title>'+d.band+', pitchers: '+d.pitchers.toLocaleString()+
-       ' of '+d.n.toLocaleString()+' ('+(100*(1-d.hit_share)).toFixed(1)+'%)</title></rect></g>'+
-       '<text class="vlab" data-col="'+i+'" data-pct="'+(100*(1-d.hit_share)).toFixed(1)+
-       '" data-p0="'+(100*(1-hs)).toFixed(1)+'" fill-opacity="'+to+'" x="'+(x+cw/2).toFixed(1)+
-       '" y="'+(p2.t-8)+'" text-anchor="middle">'+(100*(1-d.hit_share)).toFixed(1)+'%</text>'+
-       '<text class="vlab" data-col="'+i+'" data-pct="'+(100*d.hit_share).toFixed(1)+
-       '" data-p0="'+(100*hs).toFixed(1)+'" fill-opacity="'+to+'" x="'+(x+cw/2).toFixed(1)+
-       '" y="'+(p2.t+ph+18)+'" text-anchor="middle">'+(100*d.hit_share).toFixed(1)+'%</text>'+
-       '<text class="vlab" x="'+(x+cw/2).toFixed(1)+'" y="'+(p2.t+ph+36)+
-       '" text-anchor="middle">'+d.band+'</text>'+
-       '<text x="'+(x+cw/2).toFixed(1)+'" y="'+(p2.t+ph+52)+'" text-anchor="middle">n='+
+       '<rect class="mk v" data-col="'+i+'" data-y="'+hy.toFixed(1)+'" data-hh="'+
+       hh.toFixed(1)+'" data-y0="'+(p2.t+ph-hh0).toFixed(1)+'" data-h0="'+
+       hh0.toFixed(1)+'" x="'+x.toFixed(1)+'" y="'+hy.toFixed(1)+'" width="'+cw+
+       '" height="'+hh.toFixed(1)+'" fill="var(--chart-h)"><title>'+d.band+
+       ', hitters: '+d.hitters.toLocaleString()+' of '+d.n.toLocaleString()+
+       ' ('+(100*d.hit_share).toFixed(1)+'%)</title></rect>'+
+       '<rect class="mk v" data-col="'+i+'" data-y="'+py+'" data-hh="'+
+       (ph-hh-GAP).toFixed(1)+'" data-y0="'+py+'" data-h0="'+
+       (ph-hh0-GAP).toFixed(1)+'" x="'+x.toFixed(1)+'" y="'+py+'" width="'+cw+
+       '" height="'+(ph-hh-GAP).toFixed(1)+'" fill="var(--chart-p)"><title>'+
+       d.band+', pitchers: '+d.pitchers.toLocaleString()+' of '+
+       d.n.toLocaleString()+' ('+(100*(1-d.hit_share)).toFixed(1)+'%)</title>'+
+       '</rect></g>'+
+       // inside the segment, and the label rides the boundary as it moves
+       '<text class="ag-in" data-col="'+i+'" data-pct="'+pc(d.hit_share)+
+       '" data-p0="'+pc(hs)+'" data-y="'+(p2.t+ph-hh/2+4).toFixed(1)+
+       '" data-y0="'+(p2.t+ph-hh0/2+4).toFixed(1)+'" x="'+cx+'" y="'+
+       (p2.t+ph-hh/2+4).toFixed(1)+'" text-anchor="middle">'+pc(d.hit_share)+'%</text>'+
+       '<text class="ag-in" data-col="'+i+'" data-pct="'+pcP(d.hit_share)+
+       '" data-p0="'+pcP(hs)+'" data-y="'+(p2.t+(ph-hh)/2+4).toFixed(1)+
+       '" data-y0="'+(p2.t+(ph-hh0)/2+4).toFixed(1)+'" x="'+cx+'" y="'+
+       (p2.t+(ph-hh)/2+4).toFixed(1)+'" text-anchor="middle">'+pcP(d.hit_share)+'%</text>'+
+       '<text class="vlab" x="'+cx+'" y="'+(p2.t+ph+22)+'" text-anchor="middle">'+
+       d.band+'</text>'+
+       '<text x="'+cx+'" y="'+(p2.t+ph+38)+'" text-anchor="middle">n='+
        d.n.toLocaleString()+'</text>';
   });
+  o+='<line class="ag-ref" x1="'+p2.l+'" y1="'+my.toFixed(1)+'" x2="'+
+     (p2.l+pw).toFixed(1)+'" y2="'+my.toFixed(1)+'"/>'+
+     '<text class="ag-refl" x="'+(w-6)+'" y="'+(my-5).toFixed(1)+
+     '" text-anchor="end">'+pc(hs)+'% hitters across</text>'+
+     '<text class="ag-refl" x="'+(w-6)+'" y="'+(my+9).toFixed(1)+
+     '" text-anchor="end">all '+tot.toLocaleString()+' signings</text>';
   return o+'</svg>';
 }
 // Every column starts at the market split drawn directly above it and travels
@@ -2672,7 +2672,8 @@ function animateAges(root){
   svg.querySelectorAll('rect.mk.v').forEach(r=>{
     r.setAttribute('y', r.dataset.y0); r.setAttribute('height', r.dataset.h0); });
   svg.querySelectorAll('text[data-pct]').forEach(t=>{
-    t.textContent=(+t.dataset.p0).toFixed(1)+'%'; });
+    t.setAttribute('y', t.dataset.y0);
+    t.textContent=t.dataset.p0+'%'; });
   const DUR=900, STEP=110;
   d3.select(svg).selectAll('rect.mk.v')
     .transition().duration(DUR).delay((d,i)=>Math.floor(i/2)*STEP)
@@ -2683,9 +2684,10 @@ function animateAges(root){
     .transition().duration(DUR)
     .delay(function(){ return (+this.dataset.col)*STEP; })
     .ease(d3.easeCubicInOut)
+    .attr('y', function(){ return this.dataset.y; })
     .tween('pct', function(){
       const n=this, a=+n.dataset.p0, b=+n.dataset.pct;
-      return t=>{ n.textContent=(a+(b-a)*t).toFixed(1)+'%'; };
+      return t=>{ n.textContent=Math.round(a+(b-a)*t)+'%'; };
     });
 }
 function sceneBigBonus(){
