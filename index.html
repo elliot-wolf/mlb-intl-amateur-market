@@ -124,7 +124,14 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .sc-svg text.fn-lab{font-family:inherit;font-size:12px;fill:var(--muted)}
 .sc-svg text.fn-pct{font-size:17px;fill:var(--muted);font-variant-numeric:tabular-nums}
 .sc-svg text.fn-l1{font-family:inherit;font-size:12.5px;fill:var(--ink-2)}
-.sc-jrny line.jr-track{stroke:var(--line-2);stroke-width:2;stroke-linecap:round}\n.sc-jrny line.jr-stem{stroke:var(--line-2);stroke-width:1}\n.sc-jrny circle.jr-dot{fill:var(--surface);stroke:var(--chart-p);stroke-width:2}\n.sc-jrny circle.jr-dot.on{fill:var(--chart-p)}\n.sc-jrny text.jr-age{font-size:20px;fill:var(--ink-2);font-variant-numeric:tabular-nums}\n.sc-jrny text.jr-age.on{fill:var(--chart-p);font-weight:600}\n.sc-jrny text.jr-name{font-family:inherit;font-size:11.5px;font-weight:600;fill:var(--ink-2)}\n.sc-jrny text.jr-cnt{font-size:10px;fill:var(--muted);font-variant-numeric:tabular-nums}\n.sc-svg text.fn-l2{font-family:inherit;font-size:11.5px;fill:var(--muted)}
+.sc-jrny line.jr-track{stroke:var(--line-2);stroke-width:2;stroke-linecap:round}
+.sc-jrny line.jr-fill{stroke:var(--chart-p);stroke-width:3;stroke-linecap:round;
+  transition:stroke-dashoffset .9s cubic-bezier(.22,.61,.36,1)}
+.sc-jrny g.jr-br{opacity:0;transition:opacity .3s ease}
+.sc-jrny g.jr-br.on{opacity:1;transition:opacity .45s ease .75s}
+.sc-jrny path.jr-brl{fill:none;stroke:var(--chart-p);stroke-width:1.5}
+.sc-jrny text.jr-brt{font-family:inherit;font-size:13px;fill:var(--ink-2)}
+.sc-jrny tspan.jr-brn{font-weight:700;fill:var(--chart-p)}\n.sc-jrny line.jr-stem{stroke:var(--line-2);stroke-width:1}\n.sc-jrny circle.jr-dot{fill:var(--surface);stroke:var(--chart-p);stroke-width:2}\n.sc-jrny circle.jr-dot.on{fill:var(--chart-p)}\n.sc-jrny text.jr-age{font-size:20px;fill:var(--ink-2);font-variant-numeric:tabular-nums}\n.sc-jrny text.jr-age.on{fill:var(--chart-p);font-weight:600}\n.sc-jrny text.jr-name{font-family:inherit;font-size:11.5px;font-weight:600;fill:var(--ink-2)}\n.sc-jrny text.jr-cnt{font-size:10px;fill:var(--muted);font-variant-numeric:tabular-nums}\n.sc-svg text.fn-l2{font-family:inherit;font-size:11.5px;fill:var(--muted)}
 .sc-svg .lg text{fill:var(--ink-2);font-size:10.5px}
 .sc-svg line.ax{stroke:var(--line);stroke-width:1}
 .sc-svg path.mk:hover{filter:brightness(1.08)}
@@ -1037,7 +1044,17 @@ const STEPS=[
     label:d.label+': '+(100*d.n/SY.ladder[0].n).toFixed(1)+'% of signings reached this level',
     h:'PLACEHOLDER heading',
     p:'PLACEHOLDER. One caption for the whole climb; the running figure is in the chart.'
-  }))},
+  })).concat([{
+    // One scroll past the last rung. The ladder holds where it is, still
+    // reading 7.5% and 1 in 13, and the timeline underneath draws itself.
+    at:SY.ladder.length,
+    count:100*SY.ladder[SY.ladder.length-1].n/SY.ladder[0].n, fmt:v=>v.toFixed(1)+'%',
+    label:(SY.journey&&SY.journey.length
+      ? SY.journey[SY.journey.length-1].lag.toFixed(1)+
+        ' years from signing to a major league debut' : 'Time from signing to a debut'),
+    h:'PLACEHOLDER heading',
+    p:'PLACEHOLDER. How long the climb takes.'
+  }])},
   // The same ladder on the Rule 4 draft, same 2009-2015 window. The footnote
   // carries the asymmetry rather than burying it: these are picks, not
   // signings, so the first rung's drop includes players who never signed.
@@ -1270,6 +1287,14 @@ function sceneBest(){
     'seasons played and the signing bonus. '+known+' of these '+rowsD.length+
     ' bonuses are published.</p></div>';
 }
+// The wipe and the brace are driven by attribute changes rather than a
+// re-render, so the CSS transitions on them actually run.
+function applyJourneyStage(root, lit){
+  const f=root.querySelector('.sc-jrny line.jr-fill');
+  if(f) f.setAttribute('stroke-dashoffset', lit ? 0 : (f.dataset.len||0));
+  const b=root.querySelector('.sc-jrny g.jr-br');
+  if(b) b.classList.toggle('on', !!lit);
+}
 function wireBest(root){
   if(root.dataset.bsWired) return;
   root.dataset.bsWired='1';
@@ -1329,18 +1354,26 @@ function bsHover(fig){
     c.addEventListener('blur',()=>{pop.hidden=true;});
   });
 }
-function sceneJourney(){
+function sceneJourney(lit){
   const J=SY.journey, M=SY.journey_meta;
   if(!J||J.length<2) return '';
-  const w=760,h=254,L=44,R=44,iw=w-L-R,ty=118;
+  const w=760,h=282,L=44,R=44,iw=w-L-R,ty=118;
   const lo=Math.min(...J.map(d=>d.age))-0.5, hi=Math.max(...J.map(d=>d.age))+0.55;
   const sx=v=>L+iw*(v-lo)/(hi-lo);
   const CW=6.25, MW=12;                       // label and figure advances
+  const x0=sx(J[0].age), x1=sx(J[J.length-1].age), run=x1-x0;
   let o='<svg class="sc-svg sc-jrny" viewBox="0 0 '+w+' '+h+
         '" preserveAspectRatio="xMidYMid meet">'+
         '<text class="fn-l2" x="'+L+'" y="24">Median age at each stop</text>'+
-        '<line class="jr-track" x1="'+sx(J[0].age).toFixed(1)+'" y1="'+ty+
-        '" x2="'+sx(J[J.length-1].age).toFixed(1)+'" y2="'+ty+'"/>';
+        '<line class="jr-track" x1="'+x0.toFixed(1)+'" y1="'+ty+
+        '" x2="'+x1.toFixed(1)+'" y2="'+ty+'"/>'+
+        // The lit track is one line drawn over the grey one, revealed by
+        // running its dash offset to zero. A width transition would move the
+        // right-hand end; this leaves both ends where they are and wipes.
+        '<line class="jr-fill" x1="'+x0.toFixed(1)+'" y1="'+ty+'" x2="'+
+        x1.toFixed(1)+'" y2="'+ty+'" data-len="'+run.toFixed(1)+
+        '" stroke-dasharray="'+run.toFixed(1)+'" stroke-dashoffset="'+
+        (lit?0:run).toFixed(1)+'"/>';
   J.forEach((d,i)=>{
     const x=sx(d.age), up=(i%2===0), last=(i===J.length-1);
     const pctS=(100*d.share).toFixed(d.share<0.1?1:0)+'%';
@@ -1374,20 +1407,24 @@ function sceneJourney(){
        '" text-anchor="middle">'+cnt+'</text>';
   });
   const end=J[J.length-1], us=J[J.length-2];
-  const gaps=J.map(d=>d.Pitchers.age-d.Hitters.age);
-  const glo=Math.min(...gaps), ghi=Math.max(...gaps);
-  // Two lines, not one: this note is mono at 11px in a 760-wide frame, which
-  // is about 105 characters before it runs off the edge.
-  const yb=206;
-  o+='<text class="cbig" x="'+L+'" y="'+yb+'">'+end.lag.toFixed(1)+
-     ' years<tspan class="cbigl" dx="8">from signing to a major league debut, '+
-     'for the '+end.n.toLocaleString()+' who got there</tspan></text>'+
-     '<text class="cnote" x="'+L+'" y="'+(yb+20)+'">Pitchers sign '+
-     gaps[0].toFixed(1)+' years older and stay that far ahead at every stop, '+
-     'but both take the same '+end.lag.toFixed(0)+' years.</text>'+
-     '<text class="cnote" x="'+L+'" y="'+(yb+36)+'">Summer ball is Dominican for '+
+  // A brace under the whole run, arms turned up at the two stops it spans, so
+  // the sentence is attached to the distance it is describing rather than
+  // floating under the figure. It arrives as the wipe finishes.
+  const by=202, arm=10, mid=(x0+x1)/2;
+  o+='<g class="jr-br'+(lit?' on':'')+'">'+
+     '<path class="jr-brl" d="M'+x0.toFixed(1)+','+by+'V'+(by+arm)+
+     'H'+x1.toFixed(1)+'V'+by+'"/>'+
+     '<text class="jr-brt" x="'+mid.toFixed(1)+'" y="'+(by+arm+20)+
+     '" text-anchor="middle">It takes an international amateur a median of '+
+     '<tspan class="jr-brn">'+end.lag.toFixed(0)+' years</tspan>'+
+     ' from signing to reach the majors.</text></g>'+
+     // two lines: mono at 11px runs off a 760 frame at about 105 characters
+     '<text class="cnote" x="'+L+'" y="'+(by+52)+'">Summer ball is Dominican for '+
      (100*M.dsl_share).toFixed(0)+'% of them, and '+(100-100*us.share).toFixed(0)+
-     '% never play a game in the United States.</text>';
+     '% never play a game in the United States.</text>'+
+     '<text class="cnote" x="'+L+'" y="'+(by+68)+'">'+end.n.toLocaleString()+
+     ' of the '+M.cohort.toLocaleString()+' signed in this window reached the '+
+     'majors.</text>';
   return o+'</svg>';
 }
 function sceneClimb(active, CFG){
@@ -1497,6 +1534,9 @@ function funnelCap(C, i){ return 'of '+C.unit+' '+funnelReach(C,i); }
 function sceneFunnel(active, C){
   C=C||LADDERS.intl;
   const L=C.ladder, total=L[0].n;
+  // `active` can run one past the last rung now: that stage belongs to the
+  // timeline below, and the ladder simply holds its final state.
+  const cur=Math.min(active, L.length-1), lit=active>L.length-1;
   const w=760,plotH=270,pad={l:96,t:12,r:84,b:12};
   const iw=w-pad.l-pad.r, ih=plotH-pad.t-pad.b;
   const slot=ih/L.length, bh=Math.min(24, slot-6);
@@ -1522,7 +1562,7 @@ function sceneFunnel(active, C){
   o+='<line class="ax" x1="'+pad.l+'" y1="'+pad.t+'" x2="'+pad.l+'" y2="'+(pad.t+ih)+'"/>';
   L.forEach((d,i)=>{
     const y=pad.t+slot*i+(slot-bh)/2, bw=Math.max(iw*d.n/total,2);
-    const now=i===active;
+    const now=i===cur;
     const stop=(i<L.length-1)?d.n-L[i+1].n:0;
     o+='<text data-lvl="'+i+'" x="'+(pad.l-10)+'" y="'+(y+bh/2+4).toFixed(1)+
        '" text-anchor="end" class="vlab"'+(now?' style="fill:var(--ink)"':'')+'>'+d.label+'</text>'+
@@ -1540,7 +1580,7 @@ function sceneFunnel(active, C){
   // frees only the last few rows. A fixed position that suits one lands on top
   // of the other, so walk up from the last rung while the block still fits.
   const n=funnelNote(C);
-  const share=(100*L[active].n/total).toFixed(1)+'%';
+  const share=(100*L[cur].n/total).toFixed(1)+'%';
   const endShare=(100*L[L.length-1].n/total).toFixed(1)+'%';
   o+='<rect class="fn-rule" x="'+nx.toFixed(1)+'" y="'+ny.toFixed(1)+
        '" width="2" height="'+NH_+'" rx="1"/>'+
@@ -1552,32 +1592,34 @@ function sceneFunnel(active, C){
      // Its x comes from the LAST rung's figure, which is the only one it ever
      // appears beside, so it never has to be repositioned on a stage change.
      '<text class="fn-count" x="'+(nx+16).toFixed(1)+'" y="'+(ny+40).toFixed(1)+'">'+share+'</text>'+
-     '<g class="fn-top" fill-opacity="'+((active===L.length-1)?'1':'0')+'">'+
+     '<g class="fn-top" fill-opacity="'+((active>=L.length-1)?'1':'0')+'">'+
      '<text class="fn-pct" x="'+(nx+16+MONO34_*endShare.length+16).toFixed(1)+
      '" y="'+(ny+40).toFixed(1)+'">'+n.pct+'</text></g>'+
      '<g class="fn" fill-opacity="'+((active>0)?'1':'0')+'">'+
      '<text class="fn-l1"  x="'+(nx+16).toFixed(1)+'" y="'+(ny+64).toFixed(1)+'">'+
-     funnelCap(C,active)+'</text></g>';
+     funnelCap(C,cur)+'</text></g>';
   // The draft ladder is drawn identically to the international one; the only
   // place the two routes in are worth separating is the age timeline, where
   // a high schooler and a college senior are three years apart at entry.
-  return o+'</svg>'+(C.splitClimb?sceneRouteClimb(active,true):sceneJourney());
+  return o+'</svg>'+(C.splitClimb?sceneRouteClimb(active,true):sceneJourney(lit));
 }
 // A stage change only repaints: same bars, same widths, same labels. The eye
 // keeps its place and CSS tweens the colour.
 function applyFunnelStage(root, active, C){
   C=C||LADDERS.intl;
-  applyClimbStage(root, active);
+  const L=C.ladder, cur=Math.min(active, L.length-1), lit=active>L.length-1;
+  applyClimbStage(root, cur);
   const g=root.querySelector('g.fn');
-  if(g) g.setAttribute('fill-opacity', active>0 ? '1' : '0');
+  if(g) g.setAttribute('fill-opacity', cur>0 ? '1' : '0');
   const top=root.querySelector('g.fn-top');
-  if(top) top.setAttribute('fill-opacity', active===C.ladder.length-1 ? '1' : '0');
+  if(top) top.setAttribute('fill-opacity', active>=L.length-1 ? '1' : '0');
   // scoped through g.fn: sceneClimb uses fn-l1 too, further down the block
   const cap=root.querySelector('g.fn text.fn-l1');
-  if(cap) cap.textContent=funnelCap(C, active);
+  if(cap) cap.textContent=funnelCap(C, cur);
+  applyJourneyStage(root, lit);
 
   root.querySelectorAll('[data-lvl]').forEach(el=>{
-    const now = +el.dataset.lvl === active;
+    const now = +el.dataset.lvl === cur;
     if(el.tagName.toLowerCase()==='path'){
       el.setAttribute('fill', now?'var(--chart-h)':'var(--line-2)');
       el.setAttribute('opacity', now?'1':'.85');
@@ -2424,7 +2466,16 @@ function sceneCompare(metric){
 function ageFoot(i){
   const b=SY.age_bands[i], base=100*SY.pos[0].share, hs=100*b.hit_share, d=hs-base;
   const where = i===0 ? 'under 17' : (b.band==='20+' ? 'at 20 or older' : 'at '+b.band);
-  return hs.toFixed(1)+'% of the '+b.n.toLocaleString()+' players signed '+where+
+  // The age gap between the two groups belongs here, on the figure that splits
+  // by position, rather than on the timeline it used to sit under.
+  const J=SY.journey||[];
+  const lead = J.length
+    ? 'Pitchers sign '+(J[0].Pitchers.age-J[0].Hitters.age).toFixed(1)+
+      ' years older than hitters and stay that far ahead at every stop, but '+
+      'both take the same '+J[J.length-1].lag.toFixed(0)+' years to reach the '+
+      'majors. '
+    : '';
+  return lead+hs.toFixed(1)+'% of the '+b.n.toLocaleString()+' players signed '+where+
     ' are hitters, '+Math.abs(d).toFixed(1)+' points '+(d>=0?'above':'below')+
     ' the market average of '+base.toFixed(1)+'% shown in the bar above. Each column is one '+
     'age band split by position, so every column reaches 100%; the counts beneath show how '+
