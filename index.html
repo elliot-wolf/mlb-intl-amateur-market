@@ -584,7 +584,8 @@ footer{max-width:1280px;margin:0 auto;padding:0 22px 60px}
   </div>
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" id="t-story" aria-selected="true" aria-controls="p-story">The story</button>
-    <button class="tab" role="tab" id="t-mkt" aria-selected="false" aria-controls="p-mkt">Market trends</button>
+    <button class="tab" role="tab" id="t-cba" aria-selected="false" aria-controls="p-cba">Market trends</button>
+    <button class="tab" role="tab" id="t-mkt" aria-selected="false" aria-controls="p-mkt">Market trends (old)</button>
     <button class="tab" role="tab" id="t-ov" aria-selected="false" aria-controls="p-ov">Overview</button>
     <button class="tab" role="tab" id="t-map" aria-selected="false" aria-controls="p-map">Map</button>
     <button class="tab" role="tab" id="t-teams" aria-selected="false" aria-controls="p-teams">Teams</button>
@@ -599,6 +600,14 @@ footer{max-width:1280px;margin:0 auto;padding:0 22px 60px}
 <main>
   <section class="panel" id="p-story" role="tabpanel" aria-labelledby="t-story">
     <div class="sblocks" id="sc-blocks"></div>
+  </section>
+
+  <section class="panel" id="p-cba" role="tabpanel" aria-labelledby="t-cba" hidden>
+    <div class="lede">
+      <h1>PLACEHOLDER heading</h1>
+      <p class="prose">PLACEHOLDER. Nothing is built here yet -- the design is still
+      being talked through. The tab exists so the shell and the routing are in place.</p>
+    </div>
   </section>
 
   <section class="panel" id="p-mkt" role="tabpanel" aria-labelledby="t-mkt" hidden>
@@ -869,7 +878,9 @@ const PUBLIC = !!D.public;
 // when its content and copy are finished, not when its charts first render. The
 // local build always shows everything, so work in progress stays reachable while
 // it is being built.
-const V1_TABS = ['t-story'];
+// The new CBA tab and the old market-trends tab are both visible while the
+// new one is designed, so the old one stays available for reference.
+const V1_TABS = ['t-story', 't-cba', 't-mkt'];
 if(PUBLIC){
   // Hide by removing the nav BUTTON and leaving the panel in the DOM. Deleting
   // a panel removed controls that page setup wires at load (#f-c, #f-p, #f-t),
