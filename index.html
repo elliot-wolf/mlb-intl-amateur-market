@@ -2845,7 +2845,18 @@ function scanBlocks(){
     const panel=$(pair[0]); if(!panel || panel.hidden) return;
     document.querySelectorAll(pair[1]+' .sblock').forEach(el=>{
       const r=el.getBoundingClientRect();
-      if(r.top < vh*0.85 && r.bottom > 0) revealBlock(el);
+      const inView = r.top < vh*0.85 && r.bottom > 0;
+      const first = !el.dataset.shown;
+      if(inView) revealBlock(el);
+      // The age columns settle once and then sit still, so a reader who scrolls
+      // back finds the thing they came back for already over. Replay it on every
+      // return, but only on a real out-and-in: the flag flips to 0 only when the
+      // block has left the viewport entirely, so a wobble at the edge cannot
+      // restart it, and the first arrival is left to revealBlock.
+      if(el.dataset.ages==='1'){
+        if(inView && !first && el.dataset.inview!=='1') animateAges(el);
+        el.dataset.inview = inView ? '1' : '0';
+      }
       if(el.dataset.stages) updateStage(el, r, pair[2]||paintStage);
     });
   });
@@ -2917,6 +2928,7 @@ function revealBlock(el){
   el.querySelectorAll('svg .mk').forEach((m,i)=>{ m.style.transitionDelay=(70+i*55)+'ms'; });
   el.querySelectorAll('svg text').forEach(t=>{ t.style.transitionDelay='320ms'; });
   el.classList.add('in');
+  if(el.querySelector('svg.sc-ages')){ el.dataset.ages='1'; el.dataset.inview='1'; }
   animateAges(el);
   if(!el.dataset.stages) countUp(el);
 }
