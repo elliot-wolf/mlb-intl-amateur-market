@@ -126,14 +126,18 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .sc-svg text.fn-l1{font-family:inherit;font-size:12.5px;fill:var(--ink-2)}
 .sc-jrny line.jr-track{stroke:var(--line-2);stroke-width:2;stroke-linecap:round}
 .sc-jrny line.jr-fill{stroke:var(--chart-p);stroke-width:3;stroke-linecap:round;
-  transition:stroke-dashoffset .9s cubic-bezier(.22,.61,.36,1)}
+  transition:stroke-dashoffset 1.6s cubic-bezier(.33,.02,.34,1)}
 .sc-jrny g.jr-br{opacity:0;transition:opacity .3s ease}
-.sc-jrny g.jr-br.on{opacity:1;transition:opacity .45s ease .75s}
+.sc-jrny g.jr-br.on{opacity:1;transition:opacity .45s ease 1.9s}
 .sc-jrny path.jr-brl{fill:none;stroke:var(--chart-p);stroke-width:1.5}
 .sc-jrny text.jr-brt{font-family:inherit;font-size:13px;fill:var(--ink-2)}
 .sc-jrny tspan.jr-brn{font-weight:700;fill:var(--chart-p)}
 .sc-jrny line.jr-stem{stroke:var(--line-2);stroke-width:1}
 .sc-jrny circle.jr-dot{fill:var(--chart-h);stroke:var(--surface);stroke-width:2}
+.sc-jrny circle.jr-base{fill:var(--line-2)}
+.sc-jrny g.jr-stop{opacity:0;pointer-events:none;transition:opacity .45s ease}
+.sc-jrny g.jr-stop.on{opacity:1;pointer-events:auto}
+.sc-jrny text.jr-title{font-family:inherit;font-size:15px;font-weight:700;fill:var(--ink)}
 .sc-jrny text.jr-age{font-size:20px;fill:var(--ink-2);font-variant-numeric:tabular-nums}
 .sc-jrny text.jr-age.on{fill:var(--chart-h);font-weight:600}
 .sc-jrny text.jr-name{font-family:inherit;font-size:11.5px;font-weight:600;fill:var(--ink-2)}
@@ -1298,6 +1302,8 @@ function sceneBest(){
 function applyJourneyStage(root, lit){
   const f=root.querySelector('.sc-jrny line.jr-fill');
   if(f) f.setAttribute('stroke-dashoffset', lit ? 0 : (f.dataset.len||0));
+  root.querySelectorAll('.sc-jrny g.jr-stop')
+      .forEach(g=>g.classList.toggle('on', !!lit));
   const b=root.querySelector('.sc-jrny g.jr-br');
   if(b) b.classList.toggle('on', !!lit);
 }
@@ -1370,7 +1376,7 @@ function sceneJourney(lit){
   const x0=sx(J[0].age), x1=sx(J[J.length-1].age), run=x1-x0;
   let o='<svg class="sc-svg sc-jrny" viewBox="0 0 '+w+' '+h+
         '" preserveAspectRatio="xMidYMid meet">'+
-        '<text class="fn-l2" x="'+L+'" y="24">Median age at each stop</text>'+
+        '<text class="jr-title" x="'+L+'" y="26">Development Timeline</text>'+
         '<line class="jr-track" x1="'+x0.toFixed(1)+'" y1="'+ty+
         '" x2="'+x1.toFixed(1)+'" y2="'+ty+'"/>'+
         // The lit track is one line drawn over the grey one, revealed by
@@ -1380,8 +1386,14 @@ function sceneJourney(lit){
         x1.toFixed(1)+'" y2="'+ty+'" data-len="'+run.toFixed(1)+
         '" stroke-dasharray="'+run.toFixed(1)+'" stroke-dashoffset="'+
         (lit?0:run).toFixed(1)+'"/>';
+  // The wipe takes DUR to cross the run, so a stop sitting a third of the way
+  // along is revealed a third of the way through it. Each group carries its own
+  // delay; a grey dot stays behind to hold the shape of the timeline until the
+  // colour arrives.
+  const DUR=1600;
   J.forEach((d,i)=>{
     const x=sx(d.age), up=(i%2===0), last=(i===J.length-1);
+    const del=Math.round(DUR*(x-x0)/(run||1));
     const pctS=(100*d.share).toFixed(d.share<0.1?1:0)+'%';
     const cnt=pctS;   // the raw counts live in the tooltip now
     // Labels are wider than the marks they sit under, so each block is nudged
@@ -1389,7 +1401,9 @@ function sceneJourney(lit){
     const wide=Math.max(d.label.length*CW, cnt.length*CW, 4*MW);
     const cx=Math.max(wide/2+6, Math.min(w-wide/2-6, x));
     const ys = up ? {name:52, cnt:68, age:96} : {age:150, name:170, cnt:186};
-    o+='<circle class="mk jr-dot'+(last?' on':'')+'" cx="'+x.toFixed(1)+'" cy="'+ty+
+    o+='<circle class="jr-base" cx="'+x.toFixed(1)+'" cy="'+ty+'" r="'+(last?7:6)+'"/>'+
+       '<g class="jr-stop'+(lit?' on':'')+'" style="transition-delay:'+del+'ms">'+
+       '<circle class="mk jr-dot'+(last?' on':'')+'" cx="'+x.toFixed(1)+'" cy="'+ty+
        '" r="'+(last?7:6)+'"><title>'+d.label+': median age '+d.age.toFixed(1)+
        ', '+d.n.toLocaleString()+' of '+M.cohort.toLocaleString()+' ('+pctS+')'+
        (d.lag?' \u00b7 '+d.lag.toFixed(1)+' years after signing':'')+
@@ -1410,7 +1424,7 @@ function sceneJourney(lit){
        '<text class="jr-name" x="'+cx.toFixed(1)+'" y="'+ys.name+
        '" text-anchor="middle">'+d.label+'</text>'+
        '<text class="jr-cnt" x="'+cx.toFixed(1)+'" y="'+ys.cnt+
-       '" text-anchor="middle">'+cnt+'</text>';
+       '" text-anchor="middle">'+cnt+'</text></g>';
   });
   const end=J[J.length-1], us=J[J.length-2];
   // A brace under the whole run, arms turned up at the two stops it spans, so
@@ -1526,8 +1540,9 @@ function jrnyFoot(){
     (100*M.dsl_share).toFixed(0)+'% of these players open there. '+
     (us ? (100-100*us.share).toFixed(0)+'% never play a game in the United '+
           'States at all. ' : '')+
-    'Percentages are the share of the '+M.cohort.toLocaleString()+
-    ' signed in this window who reach each stop; hover a stop for the count.';
+    'Each stop carries the median age at that point and the share of the '+
+    M.cohort.toLocaleString()+' signed in this window who reach it; hover a '+
+    'stop for the count.';
 }
 function funnelNote(C){
   const L=C.ladder, total=L[0].n, d=L[L.length-1];
