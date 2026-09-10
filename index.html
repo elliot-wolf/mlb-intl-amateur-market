@@ -145,8 +145,7 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .fig-dr{color:var(--chart-h)}
 .sc-ages text.ag-in{font-size:12.5px;font-weight:700;fill:var(--surface);
   font-variant-numeric:tabular-nums}
-.sc-ages line.ag-ref{stroke:var(--ink-2);stroke-width:1.5;stroke-dasharray:5 4}
-.sc-ages text.ag-refl{font-family:inherit;font-size:10px;fill:var(--ink-2)}
+
 .sc-jrny text.jr-age{font-size:20px;fill:var(--ink-2);font-variant-numeric:tabular-nums}
 .sc-jrny text.jr-age.on{fill:var(--chart-h);font-weight:600}
 .sc-jrny text.jr-name{font-family:inherit;font-size:11.5px;font-weight:600;fill:var(--ink-2)}
@@ -2568,12 +2567,12 @@ function ageFoot(){
   const say=b=>b.band.indexOf('under')===0 ? b.band
             : b.band.indexOf('+')>0 ? 'at '+b.band.replace('+','')+' or older'
             : 'at '+b.band;
-  return lead+'The dashed rule is the whole market: hitters are '+
-    Math.round(base)+'% of all '+
+  return lead+'Hitters are '+Math.round(base)+'% of all '+
     (SY.pos[0].n+SY.pos[1].n).toLocaleString()+' signings, '+
     SY.pos[0].n.toLocaleString()+' against '+SY.pos[1].n.toLocaleString()+
-    '. Every column starts on it and settles where its own age band sits, so '+
-    'the distance a column travels is its distance from the market. The spread '+
+    '. Every column starts on that share and settles where its own age band '+
+    'sits, so the distance a column travels is its distance from the market. '+
+    'The spread '+
     'runs from '+Math.round(100*hi.hit_share)+'% of the '+hi.n.toLocaleString()+
     ' signed '+say(hi)+' down to '+Math.round(100*lo.hit_share)+'% of the '+
     lo.n.toLocaleString()+' signed '+say(lo)+'. Each column is one age band '+
@@ -2593,14 +2592,13 @@ function ageFoot(){
 function sceneAges(){
   const H=SY.pos[0], P=SY.pos[1], tot=H.n+P.n, hs=H.n/tot;
   const B=SY.age_bands, w=760, h=340, GAP=2;
-  // The overall split used to sit in its own horizontal bar above these
-  // columns, which read as a different chart rather than as their reference.
-  // It is a rule across them now: every boundary is above or below the market,
-  // the distance is the deviation, and the animation starts on the line.
-  // Right margin holds the rule's label.
-  const p2={l:26,t:44,r:104,b:66};
+  // No mark for the overall split. It had a bar of its own, which read as a
+  // separate chart, and then a rule across the columns, which read as clutter.
+  // The animation carries it instead: every column starts on the market share
+  // and leaves it, so the common origin is the reference. The number itself is
+  // in the sentence above the chart.
+  const p2={l:26,t:44,r:26,b:66};
   const pw=w-p2.l-p2.r, ph=h-p2.t-p2.b, slot=pw/B.length, cw=Math.min(88,slot-30);
-  const my=p2.t+ph*(1-hs);                       // the market boundary
   const pc=v=>Math.round(100*v);                 // whole numbers only, and the
   const pcP=v=>100-pc(v);                        // pair always sums to 100
   const yng=B[0], old=B[B.length-1];
@@ -2609,7 +2607,8 @@ function sceneAges(){
     '<p class="fig-s">'+pc(yng.hit_share)+'% of the '+yng.n.toLocaleString()+
     ' signed '+yng.band+' are hitters, against '+pc(old.hit_share)+'% of the '+
     old.n.toLocaleString()+' signed at '+old.band.replace('+','')+' or older. '+
-    'Every column starts on the market line and settles on its own.</p>';
+    'Hitters are '+pc(hs)+'% of all '+tot.toLocaleString()+' signings, and '+
+    'every column starts there before settling on its own age band.</p>';
   o+='<svg class="sc-svg sc-ages" viewBox="0 0 '+w+' '+h+
      '" preserveAspectRatio="xMidYMid meet"><defs>';
   B.forEach((d,i)=>{ const x=p2.l+slot*i+(slot-cw)/2;
@@ -2652,12 +2651,6 @@ function sceneAges(){
        '<text x="'+cx+'" y="'+(p2.t+ph+38)+'" text-anchor="middle">n='+
        d.n.toLocaleString()+'</text>';
   });
-  o+='<line class="ag-ref" x1="'+p2.l+'" y1="'+my.toFixed(1)+'" x2="'+
-     (p2.l+pw).toFixed(1)+'" y2="'+my.toFixed(1)+'"/>'+
-     '<text class="ag-refl" x="'+(w-6)+'" y="'+(my-5).toFixed(1)+
-     '" text-anchor="end">'+pc(hs)+'% hitters across</text>'+
-     '<text class="ag-refl" x="'+(w-6)+'" y="'+(my+9).toFixed(1)+
-     '" text-anchor="end">all '+tot.toLocaleString()+' signings</text>';
   return o+'</svg>';
 }
 // Every column starts at the market split drawn directly above it and travels
