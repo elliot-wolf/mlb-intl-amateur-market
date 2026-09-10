@@ -137,9 +137,10 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .sc-jrny circle.jr-base{fill:var(--line-2)}
 .sc-jrny g.jr-stop{opacity:0;pointer-events:none;transition:opacity .45s ease}
 .sc-jrny g.jr-stop.on{opacity:1;pointer-events:auto}
-.sc-jrny text.jr-title{font-family:inherit;font-size:15px;font-weight:700;fill:var(--ink)}
 .sc-jrny text.jr-sub{font-family:inherit;font-size:11.5px;fill:var(--muted)}
 .fig-h{font-size:15px;font-weight:700;color:var(--ink);margin:0 0 3px;line-height:1.35}
+.fig-rule{width:320px;max-width:70%;height:3px;border-radius:1.5px;margin:0 0 9px;
+  background:linear-gradient(90deg,var(--chart-h) 0 50%,var(--chart-p) 50% 100%)}
 .fig-s{font-size:11.5px;color:var(--muted);margin:0 0 12px;max-width:82ch;line-height:1.5}
 .fig-vz{color:var(--chart-p)}
 .fig-dr{color:var(--chart-h)}
@@ -1501,18 +1502,17 @@ function wireCities(root){
 function sceneJourney(lit){
   const J=SY.journey, M=SY.journey_meta;
   if(!J||J.length<2) return '';
-  const w=760,TOP=18,h=246+TOP,L=44,R=44,iw=w-L-R,ty=118+TOP;
+  const w=760,TOP=0,h=246+TOP,L=44,R=44,iw=w-L-R,ty=118+TOP;
   const lo=Math.min(...J.map(d=>d.age))-0.5, hi=Math.max(...J.map(d=>d.age))+0.55;
   const sx=v=>L+iw*(v-lo)/(hi-lo);
   const CW=6.25, MW=12;                       // label and figure advances
   const x0=sx(J[0].age), x1=sx(J[J.length-1].age), run=x1-x0;
   let o='<svg class="sc-svg sc-jrny" viewBox="0 0 '+w+' '+h+
         '" preserveAspectRatio="xMidYMid meet">'+
-        '<text class="jr-title" x="'+L+'" y="26">Development Timeline</text>'+
         // The rung above and the stops below are the same level counted two
         // ways, and side by side they read as a contradiction. Say so here,
         // where the question gets asked, not in the footnote.
-        '<text class="jr-sub" x="'+L+'" y="44">Summer league is the one stop '+
+        '<text class="jr-sub" x="'+L+'" y="14">Summer league is the one stop '+
         'the ladder above cannot show: it is not a step on the way up, because '+
         'half of these players appear both there and in the US.</text>'+
         '<line class="jr-track" x1="'+x0.toFixed(1)+'" y1="'+ty+
@@ -1689,6 +1689,20 @@ function jrnyFoot(){
     (us ? '; '+(100-100*us.share).toFixed(0)+'% of these players never play a '+
           'game in the United States at all.' : '.');
 }
+// Two rules rather than one, in the block's own two colours: the ladder above
+// is orange and the timeline below it is teal, so the bar under the heading
+// says which two figures this box holds before either has been read.
+function funnelHead(){
+  const L=SY.ladder, J=SY.journey||[], end=J.length?J[J.length-1]:null;
+  const n0=L[0].n, mlb=L[L.length-1].n;
+  return '<p class="fig-h">The Development Timeline of an International Amateur</p>'+
+    '<div class="fig-rule"></div>'+
+    '<p class="fig-s">'+n0.toLocaleString()+' players signed between '+
+    SY.outcome_window[0]+' and '+SY.outcome_window[1]+', followed through '+
+    ((SY.per_year_meta&&SY.per_year_meta.through)||2026)+'. '+
+    (100*mlb/n0).toFixed(1)+'% reached the majors'+
+    (end?', a median of '+end.lag.toFixed(0)+' years after signing':'')+'.</p>';
+}
 function funnelNote(C){
   const L=C.ladder, total=L[0].n, d=L[L.length-1];
   return {pct:'1 in '+Math.round(total/d.n), l1:'of '+C.unit+' '+C.reach};
@@ -1735,7 +1749,11 @@ function sceneFunnel(active, C){
   const flush=pad.l+iw-NW_-16;               // x that puts the block at the edge
   let nx=Math.max(clear, flush);
   if((pad.l+iw)-nx < NW_){ h=plotH+NH_+12; ny=plotH+4; nx=pad.l; }
-  let o='<svg class="sc-svg" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="xMidYMid meet">';
+  // The draft comparison runs through this same function and is a different
+  // figure with its own heading, so the title is gated to the international
+  // ladder rather than printed on both.
+  let o = C.splitClimb ? '' : funnelHead();
+  o+='<svg class="sc-svg" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="xMidYMid meet">';
   o+='<line class="ax" x1="'+pad.l+'" y1="'+pad.t+'" x2="'+pad.l+'" y2="'+(pad.t+ih)+'"/>';
   L.forEach((d,i)=>{
     const y=pad.t+slot*i+(slot-bh)/2, bw=Math.max(iw*d.n/total,2);
