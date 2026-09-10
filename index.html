@@ -139,6 +139,10 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .sc-jrny g.jr-stop.on{opacity:1;pointer-events:auto}
 .sc-jrny text.jr-title{font-family:inherit;font-size:15px;font-weight:700;fill:var(--ink)}
 .sc-jrny text.jr-sub{font-family:inherit;font-size:11.5px;fill:var(--muted)}
+.fig-h{font-size:15px;font-weight:700;color:var(--ink);margin:0 0 3px;line-height:1.35}
+.fig-s{font-size:11.5px;color:var(--muted);margin:0 0 12px;max-width:82ch;line-height:1.5}
+.fig-vz{color:var(--chart-p)}
+.fig-dr{color:var(--chart-h)}
 .sc-jrny text.jr-age{font-size:20px;fill:var(--ink-2);font-variant-numeric:tabular-nums}
 .sc-jrny text.jr-age.on{fill:var(--chart-h);font-weight:600}
 .sc-jrny text.jr-name{font-family:inherit;font-size:11.5px;font-weight:600;fill:var(--ink-2)}
@@ -2199,7 +2203,7 @@ function grFrame(){
 function sceneGrowth(){
   const G=grData(); if(!G||!D.flow) return '';
   const f=grFrame(), rx=(f.x+f.w-18).toFixed(1);
-  let o='<svg class="sc-svg gr-svg" viewBox="'+
+  let o=grTitle()+'<svg class="sc-svg gr-svg" viewBox="'+
         [f.x,f.y,f.w,f.h].map(v=>v.toFixed(1)).join(' ')+'" '+
         'preserveAspectRatio="xMidYMid meet" role="img">'+
         '<g class="gr-land">'+D.flow.shapes.map(s=>'<path d="'+s.d+
@@ -2266,6 +2270,35 @@ function grMix(root, DUR){
     .text(d=>d.l+': '+Math.round(d.v).toLocaleString()+' of '+
              Math.round(tot).toLocaleString()+' ('+d.pc.toFixed(1)+'%) in '+
              G.periods[grIdx()].label);
+}
+// Both halves checked against the series rather than asserted: Venezuela's
+// share is NOT up every period -- it fell in four of the eleven moves, twice
+// running -- so the title claims the run that actually holds. The Dominican
+// Republic really has led all twelve.
+function grTitle(){
+  const G=grData(); if(!G) return '';
+  const vz=G.countries.find(d=>d.country==='Venezuela');
+  const dr=G.countries.find(d=>d.country==='Dominican Republic');
+  const T=G.totals; if(!vz||!dr||!T||!T.length) return '';
+  const n=T.length, sh=(c,i)=>100*c.per[i]/T[i];
+  let run=0;
+  for(let i=n-1;i>0;i--){ if(sh(vz,i)>sh(vz,i-1)) run++; else break; }
+  let falls=0;
+  for(let i=1;i<n;i++) if(sh(vz,i)<sh(vz,i-1)) falls++;
+  let led=0;
+  for(let i=0;i<n;i++){
+    const top=G.countries.reduce((a,b)=>b.per[i]>a.per[i]?b:a);
+    if(top.country==='Dominican Republic') led++;
+  }
+  const word=k=>['none','one','two','three','four','five','six'][k]||String(k);
+  return '<p class="fig-h"><span class="fig-vz">Venezuela</span>\u2019s share of '+
+    'the market has grown from '+sh(vz,0).toFixed(1)+'% to '+sh(vz,n-1).toFixed(1)+
+    '%, and <span class="fig-dr">the Dominican Republic</span> has led every '+
+    'period.</p>'+
+    '<p class="fig-s">Venezuela is up in each of the last '+word(run)+' periods, '+
+    'though the climb is not steady: its share fell in '+word(falls)+' of the '+
+    (n-1)+' moves. The Dominican Republic signed the most players in all '+
+    led+'.</p>';
 }
 function grMax(){
   const G=grData(); let m=0;
@@ -2395,14 +2428,16 @@ function wireGrowth(root){
   if(root.dataset.grWired) return;
   const G=grData(); if(!G) return;
   root.dataset.grWired='1';
-  const fig=root.querySelector('.sb-fig')||root;
+  // into the scene, after the title, rather than at the top of the whole
+  // figure where it would sit above the heading it belongs to
+  const fig=root.querySelector('[role="img"]')||root.querySelector('.sb-fig')||root;
   const bar=document.createElement('div');
   bar.className='gr-bar';
   bar.innerHTML='<button class="btn gr-play" type="button">Play</button>'+
     '<label class="gr-tog"><input type="checkbox" class="gr-per"> one period at a time</label>'+
     '<input type="range" class="gr-scrub" min="0" max="'+(G.periods.length-1)+
     '" step="0.02" value="0" aria-label="Signing period">';
-  fig.insertBefore(bar, fig.firstChild);
+  fig.insertBefore(bar, fig.querySelector('svg.gr-svg'));
   bar.querySelector('.gr-play').onclick=()=>{ grTimer?grStop(root):grPlay(root); };
   bar.querySelector('.gr-scrub').oninput=e=>{ grStop(root); grPos=+e.target.value; grPaint(root,false); };
   bar.querySelector('.gr-per').onchange=e=>{
@@ -2554,9 +2589,18 @@ function sceneAges(){
   const w=760, pad={l:26,r:26};
   const iw=w-pad.l-pad.r, GAP=2;
 
+  const B0=SY.age_bands;
+  const yng=B0[0], old=B0[B0.length-1];
+  let o='<p class="fig-h"><span class="fig-dr">Hitters</span> sign younger than '+
+    '<span class="fig-vz">pitchers</span>.</p>'+
+    '<p class="fig-s">'+(100*yng.hit_share).toFixed(1)+'% of the '+
+    yng.n.toLocaleString()+' signed '+yng.band+' are hitters, against '+
+    (100*old.hit_share).toFixed(1)+'% of the '+old.n.toLocaleString()+
+    ' signed at '+old.band.replace('+','')+' or older. Every column below starts '+
+    'at the market split and settles on its own.</p>';
   // the market split, compact, as the reference the columns are read against
   const sh=104, sbh=34, sy=34;
-  let o='<svg class="sc-svg sc-strip" viewBox="0 0 '+w+' '+sh+'" preserveAspectRatio="xMidYMid meet">'+
+  o+='<svg class="sc-svg sc-strip" viewBox="0 0 '+w+' '+sh+'" preserveAspectRatio="xMidYMid meet">'+
     '<defs><clipPath id="spill"><rect x="'+pad.l+'" y="'+sy+'" width="'+iw+'" height="'+sbh+
     '" rx="6"/></clipPath></defs>'+
     '<text class="fn-l2" x="'+pad.l+'" y="16">All signings</text>'+
