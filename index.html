@@ -1249,17 +1249,17 @@ const money=v=>'$'+Math.round(Number(v)).toLocaleString();
 const STEPS=[
   {scene:'funnel', cohort:'intl', headInChart:true, noHead:true,
    stages:SY.ladder.map((d,i)=>({
-    at:i, count:100*d.n/SY.ladder[0].n, fmt:v=>v.toFixed(1)+'%',
+    at:i, count:100*d.n/SY.ladder[0].n, fmt:v=>v.toFixed(0)+'%',
     // No longer drawn -- the placeholder line is gone -- but paintStage still
     // feeds this to the figure's aria-label, so it states the rung rather than
     // leaving screen readers an empty string. Derived from the data, not copy.
-    label:d.label+': '+(100*d.n/SY.ladder[0].n).toFixed(1)+'% of signings reached this level',
+    label:d.label+': '+(100*d.n/SY.ladder[0].n).toFixed(0)+'% of signings reached this level',
     foot:jrnyFoot()
   })).concat([{
     // One scroll past the last rung. The ladder holds where it is, still
     // reading its last share, and the timeline underneath draws itself.
     at:SY.ladder.length,
-    count:100*SY.ladder[SY.ladder.length-1].n/SY.ladder[0].n, fmt:v=>v.toFixed(1)+'%',
+    count:100*SY.ladder[SY.ladder.length-1].n/SY.ladder[0].n, fmt:v=>v.toFixed(0)+'%',
     label:(SY.journey&&SY.journey.length
       ? SY.journey[SY.journey.length-1].lag.toFixed(1)+
         ' years from signing to a major league debut' : 'Time from signing to a debut'),
@@ -1983,7 +1983,7 @@ function sceneJourney(lit){
   J.forEach((d,i)=>{
     const x=sx(d.age), up=(i%2===0), last=(i===J.length-1);
     const del=Math.round(DUR*(x-x0)/(run||1));
-    const pctS=(100*d.share).toFixed(d.share<0.1?1:0)+'%';
+    const pctS=(100*d.share).toFixed(0)+'%';
     const cnt=pctS;   // the raw counts live in the tooltip now
     // Labels are wider than the marks they sit under, so each block is nudged
     // to stay inside the frame rather than allowed to run off the edge.
@@ -2230,10 +2230,10 @@ function sceneFunnel(active, C){
        '<path data-lvl="'+i+'" class="mk" opacity="'+(now?'1':'.85')+'" d="'+
        barPath(pad.l,+y.toFixed(1),+bw.toFixed(1),+bh.toFixed(1),4)+'" fill="'+
        (now?'var(--chart-h)':'var(--line-2)')+'"><title>'+d.label+': '+d.n.toLocaleString()+
-       ' of '+total.toLocaleString()+' ('+(100*d.n/total).toFixed(1)+'%)'+
+       ' of '+total.toLocaleString()+' ('+(100*d.n/total).toFixed(0)+'%)'+
        (stop>0?' &#183; '+stop.toLocaleString()+' went no further':'')+'</title></path>'+
        '<text data-lvl="'+i+'" x="'+(pad.l+bw+8).toFixed(1)+'" y="'+(y+bh/2+4).toFixed(1)+'"'+
-       (now?' style="fill:var(--ink)"':'')+'>'+(100*d.n/total).toFixed(1)+'%</text>';
+       (now?' style="fill:var(--ink)"':'')+'>'+(100*d.n/total).toFixed(0)+'%</text>';
   });
   // The running figure sits in whatever space the bars actually leave, found
   // rather than assumed. The international ladder collapses below Single-A and
@@ -2247,8 +2247,10 @@ function sceneFunnel(active, C){
   // some, so the true figure is likely a little worse than that. The draft
   // ladder keeps its ratio because the draft is its own complete record.
   const showRatio = !C.source;
-  const share=(100*L[cur].n/total).toFixed(1)+'%';
-  const endShare=(100*L[L.length-1].n/total).toFixed(1)+'%';
+  // Whole percentages on the ladder (Elliot's call, 2026-09-14); ages keep
+  // their decimal.
+  const share=(100*L[cur].n/total).toFixed(0)+'%';
+  const endShare=(100*L[L.length-1].n/total).toFixed(0)+'%';
   o+='<rect class="fn-rule" x="'+nx.toFixed(1)+'" y="'+ny.toFixed(1)+
        '" width="2" height="'+NH_+'" rx="1"/>'+
      // Where it is drawn, "1 in x" rides on the figure's own baseline rather
