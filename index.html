@@ -166,13 +166,11 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .vz-svg path.vz-cur{fill:var(--chart-p)}
 .ag-bar{justify-content:space-between;flex-wrap:wrap;row-gap:8px;margin:2px 0 4px}
 .ag-lg{display:flex;gap:16px;font-family:"IBM Plex Mono",monospace;font-size:12px;
-  color:var(--ink-2);transition:opacity .3s ease}
+  color:var(--ink-2);transition:opacity .45s ease}
 .ag-lg.off{opacity:0}
 .ag-key{display:inline-flex;align-items:center;gap:6px}
 .ag-sw{display:inline-block;width:10px;height:10px;border-radius:2px}
 .ag-tg{display:flex;gap:8px;flex-wrap:wrap}
-.sc-ages text.ag-sv{font-size:12.5px;font-weight:700;fill:var(--ink-2);
-  font-variant-numeric:tabular-nums}
 .sc-ages text.ag-in{font-size:12.5px;font-weight:700;fill:var(--surface);
   font-variant-numeric:tabular-nums}
 
@@ -3271,8 +3269,8 @@ function sceneAges(){
   const yng=B[0], old=B[B.length-1];
   // The second view is each band's share of all signings, on the signings whose
   // age falls in a band, so the five add to 100%. Its scale tops out at the next
-  // ten per cent above the biggest band, with room left for that band's label,
-  // so the tallest column does not read as a whole the way it does in the split.
+  // ten per cent above the biggest band, so the tallest column does not read as
+  // a whole the way every column does in the split.
   const nb=B.reduce((a,b)=>a+b.n,0), mxs=Math.max(...B.map(b=>b.n))/nb;
   let top=Math.ceil(mxs*10)/10; if(top-mxs<0.03) top+=0.1;
   // Set exactly as the journey's title: the large heading in ink, then the
@@ -3329,28 +3327,46 @@ function sceneAges(){
        '" height="'+(ph-hh-GAP).toFixed(1)+'" fill="var(--chart-p)"><title>'+tSplit+
        '</title></rect></g>'+
        // inside the segment, and the label rides the boundary as it moves
-       '<text class="ag-in" data-col="'+i+'" data-pct="'+pc(d.hit_share)+
+       '<text class="ag-in" data-kind="h" data-col="'+i+'" data-pct="'+pc(d.hit_share)+
+       '" data-yb="'+(p2.t+ph+2+hh/2+4).toFixed(1)+
        '" data-p0="'+pc(hs)+'" data-y="'+(p2.t+ph-hh/2+4).toFixed(1)+
        '" data-y0="'+(p2.t+ph-hh0/2+4).toFixed(1)+'" x="'+cx+'" y="'+
        (p2.t+ph-hh/2+4).toFixed(1)+'" text-anchor="middle">'+pc(d.hit_share)+'%</text>'+
-       '<text class="ag-in" data-col="'+i+'" data-pct="'+pcP(d.hit_share)+
+       '<text class="ag-in" data-kind="p" data-col="'+i+'" data-pct="'+pcP(d.hit_share)+
+       '" data-sp="'+pc(share)+'" data-ys="'+(sy+sh/2+4).toFixed(1)+
        '" data-p0="'+pcP(hs)+'" data-y="'+(p2.t+(ph-hh)/2+4).toFixed(1)+
        '" data-y0="'+(p2.t+(ph-hh0)/2+4).toFixed(1)+'" x="'+cx+'" y="'+
        (p2.t+(ph-hh)/2+4).toFixed(1)+'" text-anchor="middle">'+pcP(d.hit_share)+'%</text>'+
-       // the share view's label, above its column; hidden until that view
-       '<text class="ag-sv" data-col="'+i+'" x="'+cx+'" y="'+(sy-8).toFixed(1)+
-       '" text-anchor="middle" style="opacity:0">'+pc(share)+'%</text>'+
        '<text class="vlab" x="'+cx+'" y="'+(p2.t+ph+22)+'" text-anchor="middle">'+
        d.band+'</text>';
   });
   return o+'</svg>';
 }
-// The toggle. "Share of all signings" drops each hitter segment out of the
-// bottom of its column while the pitcher segment fills in behind it, then
-// resizes the column to its band's share of the market. Going back runs the
-// same moves in reverse. The legend fades in that view: the columns there are
-// every signing, not pitchers.
+// The toggle. "Share of all signings" slides each hitter segment out of the
+// bottom of its column while the pitcher segment and the column's outline close
+// down onto its band's share of the market, all in one move. Going back runs the
+// same move the other way. The white label inside the column rides with it and
+// swaps its number at the halfway point, faded out, because the two numbers
+// measure different things and counting from one to the other would suggest
+// they don't. The legend fades in that view: the columns there are every
+// signing, not pitchers.
+//
+// One duration and one easing for everything in a column is what keeps it
+// smooth. The pitcher segment's bottom edge and the hitter segment's top edge
+// then move by the same amount on every frame, so the 2px gap between them
+// never opens or closes, and the outline's top edge is the pitcher segment's.
 const AG_M=[['split','Hitters and pitchers'],['share','Share of all signings']];
+function agLabel(node, y1, txt1, hide){
+  const y0=+node.getAttribute('y');
+  const o0=node.style.opacity==='' ? 1 : +node.style.opacity;
+  return t=>{
+    node.setAttribute('y', (y0+(y1-y0)*t).toFixed(1));
+    if(hide){ node.style.opacity=Math.max(0, o0*(1-2*t)).toFixed(3); return; }
+    if(t<0.5){ node.style.opacity=(o0*(1-2*t)).toFixed(3); return; }
+    if(node.textContent!==txt1) node.textContent=txt1;
+    node.style.opacity=(2*t-1).toFixed(3);
+  };
+}
 function setAgesMode(root, m){
   const svg=root.querySelector('svg.sc-ages'); if(!svg) return;
   const share=m==='share';
@@ -3358,53 +3374,45 @@ function setAgesMode(root, m){
   const lg=root.querySelector('.ag-lg'); if(lg) lg.classList.toggle('off', share);
   const q=sel=>[...svg.querySelectorAll(sel)];
   const Hr=q('rect.mk.v[data-kind="h"]'), Pr=q('rect.mk.v[data-kind="p"]'),
-        Cl=q('rect.ag-clip'), Lab=q('text.ag-in'), SV=q('text.ag-sv');
+        Cl=q('rect.ag-clip'), Lh=q('text.ag-in[data-kind="h"]'),
+        Lp=q('text.ag-in[data-kind="p"]');
   Pr.forEach(r=>{ const t=r.querySelector('title');
     if(t) t.textContent=share ? r.dataset.tshare : r.dataset.tsplit; });
-  const settleLabels=()=>Lab.forEach(t=>{
-    t.setAttribute('y', t.dataset.y); t.textContent=t.dataset.pct+'%'; });
-  if(typeof d3!=='undefined') d3.selectAll([...Hr,...Pr,...Cl,...Lab,...SV]).interrupt();
+  // where every piece ends up in the view being switched to
+  const to={
+    h:r=>share ? r.dataset.yb : r.dataset.y,
+    py:r=>share ? r.dataset.sy : r.dataset.y,
+    ph:r=>share ? r.dataset.sh : r.dataset.hh,
+    cy:r=>share ? r.dataset.sy : r.dataset.y,
+    ch:r=>share ? r.dataset.sh : r.dataset.hh,
+    lpy:t=>share ? t.dataset.ys : t.dataset.y,
+    lpt:t=>(share ? t.dataset.sp : t.dataset.pct)+'%',
+    lhy:t=>share ? t.dataset.yb : t.dataset.y
+  };
+  if(typeof d3!=='undefined') d3.selectAll([...Hr,...Pr,...Cl,...Lh,...Lp]).interrupt();
   if(REDUCE || document.hidden || typeof d3==='undefined'){
-    const put=(el,y,hh)=>{ el.setAttribute('y',y); el.setAttribute('height',hh); };
-    Hr.forEach(r=>put(r, share?r.dataset.yb:r.dataset.y, r.dataset.hh));
-    Pr.forEach(r=>put(r, share?r.dataset.sy:r.dataset.y, share?r.dataset.sh:r.dataset.hh));
-    Cl.forEach(r=>put(r, share?r.dataset.sy:r.dataset.y, share?r.dataset.sh:r.dataset.hh));
-    settleLabels();
-    Lab.forEach(t=>{ t.style.opacity=share?'0':'1'; });
-    SV.forEach(t=>{ t.style.opacity=share?'1':'0'; });
+    Hr.forEach(r=>{ r.setAttribute('y', to.h(r)); r.setAttribute('height', r.dataset.hh); });
+    Pr.forEach(r=>{ r.setAttribute('y', to.py(r)); r.setAttribute('height', to.ph(r)); });
+    Cl.forEach(r=>{ r.setAttribute('y', to.cy(r)); r.setAttribute('height', to.ch(r)); });
+    Lp.forEach(t=>{ t.setAttribute('y', to.lpy(t)); t.textContent=to.lpt(t); t.style.opacity='1'; });
+    Lh.forEach(t=>{ t.setAttribute('y', to.lhy(t)); t.textContent=t.dataset.pct+'%';
+      t.style.opacity=share?'0':'1'; });
     return;
   }
-  const T1=450, T2=650, ST=60, E=d3.easeCubicInOut;
-  const col=el=>(+el.dataset.col)*ST;
-  const ds=k=>function(){ return this.dataset[k]; };
-  if(share){
-    d3.selectAll(Lab).transition().duration(180).style('opacity',0);
-    d3.selectAll(SV).style('opacity',0);
-    // one easing for both segments, so the gap between them closes rather than
-    // opening as the hitters leave
-    d3.selectAll(Hr).transition().delay(function(){ return col(this); })
-      .duration(T1).ease(E).attr('y', ds('yb'));
-    d3.selectAll(Pr).transition().delay(function(){ return col(this); })
-      .duration(T1).ease(E).attr('y', ds('y')).attr('height', ds('full'))
-      .transition().duration(T2).ease(E).attr('y', ds('sy')).attr('height', ds('sh'));
-    d3.selectAll(Cl).transition().delay(function(){ return col(this)+T1; })
-      .duration(T2).ease(E).attr('y', ds('sy')).attr('height', ds('sh'));
-    d3.selectAll(SV).transition().delay(function(){ return col(this)+T1+T2-120; })
-      .duration(260).style('opacity',1);
-  } else {
-    d3.selectAll(SV).transition().duration(180).style('opacity',0);
-    d3.selectAll(Pr).transition().delay(function(){ return col(this); })
-      .duration(T2).ease(E).attr('y', ds('y')).attr('height', ds('full'))
-      .transition().duration(T1).ease(E).attr('height', ds('hh'));
-    d3.selectAll(Cl).transition().delay(function(){ return col(this); })
-      .duration(T2).ease(E).attr('y', ds('y')).attr('height', ds('hh'));
-    d3.selectAll(Hr).attr('y', ds('yb')).attr('height', ds('hh'))
-      .transition().delay(function(){ return col(this)+T2; })
-      .duration(T1).ease(E).attr('y', ds('y'));
-    settleLabels();
-    d3.selectAll(Lab).transition().delay(function(){ return col(this)+T2+T1-120; })
-      .duration(260).style('opacity',1);
-  }
+  const DUR=950, ST=70, E=d3.easeCubicInOut;
+  const run=sel=>d3.selectAll(sel).transition()
+    .delay(function(){ return (+this.dataset.col)*ST; }).duration(DUR).ease(E);
+  run(Hr).attr('y', function(){ return to.h(this); })
+         .attr('height', function(){ return this.dataset.hh; });
+  run(Pr).attr('y', function(){ return to.py(this); })
+         .attr('height', function(){ return to.ph(this); });
+  run(Cl).attr('y', function(){ return to.cy(this); })
+         .attr('height', function(){ return to.ch(this); });
+  run(Lp).tween('lab', function(){ return agLabel(this, +to.lpy(this), to.lpt(this), false); });
+  // the hitter label leaves with its segment, and comes back in on the second
+  // half of the return, once there is a segment under it again
+  Lh.forEach(t=>{ if(!share) t.textContent=t.dataset.pct+'%'; });
+  run(Lh).tween('lab', function(){ return agLabel(this, +to.lhy(this), this.textContent, share); });
 }
 function wireAges(root){
   if(root.dataset.agWired) return;
