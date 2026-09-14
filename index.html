@@ -1225,7 +1225,7 @@ const STEPS=[
     foot:jrnyFoot()
   })).concat([{
     // One scroll past the last rung. The ladder holds where it is, still
-    // reading 7.5% and 1 in 13, and the timeline underneath draws itself.
+    // reading its last share, and the timeline underneath draws itself.
     at:SY.ladder.length,
     count:100*SY.ladder[SY.ladder.length-1].n/SY.ladder[0].n, fmt:v=>v.toFixed(1)+'%',
     label:(SY.journey&&SY.journey.length
@@ -1946,21 +1946,26 @@ function sceneFunnel(active, C){
   // frees only the last few rows. A fixed position that suits one lands on top
   // of the other, so walk up from the last rung while the block still fits.
   const n=funnelNote(C);
+  // No "1 in x" on a ladder whose denominator is only what MLB's transaction
+  // log shows. A share can carry its qualifier on the line beneath it; a round
+  // "1 in 13" reads as a settled count of every signing, and the log misses
+  // some, so the true figure is likely a little worse than that. The draft
+  // ladder keeps its ratio because the draft is its own complete record.
+  const showRatio = !C.source;
   const share=(100*L[cur].n/total).toFixed(1)+'%';
   const endShare=(100*L[L.length-1].n/total).toFixed(1)+'%';
   o+='<rect class="fn-rule" x="'+nx.toFixed(1)+'" y="'+ny.toFixed(1)+
        '" width="2" height="'+NH_+'" rx="1"/>'+
-     // "1 in x" rides on the figure's own baseline rather than taking a line of
-     // its own. Stacked above it, its slot had to be held open on all seven rungs
-     // to stop the figure jumping when it arrived, and six of those rungs then
-     // carried an empty band. Here nothing is reserved: the block is the same
-     // height throughout and the two readings of the same number sit together.
-     // Its x comes from the LAST rung's figure, which is the only one it ever
-     // appears beside, so it never has to be repositioned on a stage change.
+     // Where it is drawn, "1 in x" rides on the figure's own baseline rather
+     // than taking a line of its own, so nothing is reserved and the block is
+     // the same height throughout. Its x comes from the LAST rung's figure, the
+     // only one it ever appears beside. applyFunnelStage finds no g.fn-top on
+     // the international ladder and skips it.
      '<text class="fn-count" x="'+(nx+16).toFixed(1)+'" y="'+(ny+40).toFixed(1)+'">'+share+'</text>'+
+     (showRatio ?
      '<g class="fn-top" fill-opacity="'+((active>=L.length-1)?'1':'0')+'">'+
      '<text class="fn-pct" x="'+(nx+16+MONO34_*endShare.length+16).toFixed(1)+
-     '" y="'+(ny+40).toFixed(1)+'">'+n.pct+'</text></g>'+
+     '" y="'+(ny+40).toFixed(1)+'">'+n.pct+'</text></g>' : '')+
      '<g class="fn" fill-opacity="'+((active>0)?'1':'0')+'">'+
      '<text class="fn-l1"  x="'+(nx+16).toFixed(1)+'" y="'+(ny+64).toFixed(1)+'">'+
      funnelCap(C,cur)+'</text>'+
@@ -2197,10 +2202,14 @@ function sceneTriad(active){
        (100*D3[r.k][active].n/tot[r.k]).toFixed(1)+
        '%<tspan class="rt-key" dx="7">'+r.lab+'</tspan></text>';
   });
+  // Ratios for the two draft routes only. The international denominator is
+  // the transaction log, which misses some signings, so it is shown as the
+  // share above and never as a round "1 in x".
   const ratio=k=>Math.round(tot[k]/D3[k][L.length-1].n);
   o+='<g class="fn" fill-opacity="'+((active===L.length-1)?'1':'0')+'">'+
-     '<text class="fn-l1" x="'+(nx+16).toFixed(1)+'" y="'+(ny+104).toFixed(1)+'">1 in '+
-     ratio('intl')+' vs 1 in '+ratio('hs')+' vs 1 in '+ratio('col')+'</text></g>';
+     '<text class="fn-l1" x="'+(nx+16).toFixed(1)+'" y="'+(ny+104).toFixed(1)+'">'+
+     TRIAD.filter(r=>r.k!=='intl').map(r=>r.lab+' 1 in '+ratio(r.k)).join(', ')+
+     '</text></g>';
   return o+'</svg>'+sceneTriadClimb(active);
 }
 function sceneTriadClimb(active){
