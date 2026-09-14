@@ -1009,7 +1009,7 @@ footer{max-width:1280px;margin:0 auto;padding:0 22px 60px}
     <span id="ft-span">2009-10 through 2025</span> signing periods, built from MLB's public transaction
     log rather than from published signing lists. Every rate on this page is a share of the signings
     that log records. None is an official figure, and none can be: a signing the log never recorded
-    is not in it. <a href="#" id="ft-methods">Full methods and limits</a>.</p></div>
+    is not in it.</p></div>
   <div><h4>How a player qualifies</h4><p>Signed with an MLB organization, never appeared in a Rule 4 draft,
     no professional experience in any league before signing, and under 23 at signing. Players born in the
     US, Canada or Puerto Rico are excluded only at 17.5 and above, since draft eligibility follows
@@ -1019,7 +1019,7 @@ footer{max-width:1280px;margin:0 auto;padding:0 22px 60px}
     and a partial bonus column would read as zero. Dates of birth are <em>as reported</em>; age
     falsification is documented in this market. Some signings have no record of their own and reach
     the census only through a later assignment.</p></div>
-  <div><h4>Provenance</h4><p>Rows marked <span class="inf">&#9671;</span> had no signing transaction logged; the
+  <div id="ft-prov"><h4>Provenance</h4><p>Rows marked <span class="inf">&#9671;</span> had no signing transaction logged; the
     period is inferred from the player's first rookie-league assignment and age is measured at the period
     open. Everything else is an observed signing record.</p></div>
 </div></footer>
@@ -1062,6 +1062,10 @@ if(PUBLIC){
   // A single tab is not a choice, so the tablist is noise.
   const bar=document.querySelector('[role="tablist"]');
   if(bar && V1_TABS.length<2) bar.hidden=true;
+  // The provenance note explains the \u25c7 marker in the player tables, and no
+  // published tab has one.
+  const prov=document.getElementById('ft-prov');
+  if(prov) prov.remove();
 }
 /* ---------- tabs ---------- */
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
@@ -1108,8 +1112,19 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   }
 })();
 /* ---------- header summary ---------- */
-$('#hdr').textContent = D.n.toLocaleString()+' signings \u00b7 '+D.periods[0]+'\u2013'+
-  (D.periods[D.periods.length-1]+1)+' \u00b7 '+D.countries.length+' countries';
+// The span is read off MLB's names for the first and last windows, like the
+// footer's, rather than first-to-last+1: the last period is the calendar-year
+// "2025", and last+1 printed 2026, a year no signing here falls in. A July
+// window's name ends in the year it closes ("2019-20"), so that is the year shown.
+(function(){
+  const PL=(D.mkt&&D.mkt.periods)||[];
+  const closes=l=>{ const m=/^(\d{2})(\d{2})-(\d{2})$/.exec(l); return m ? m[1]+m[3] : l; };
+  const span=PL.length
+    ? String(PL[0].label).slice(0,4)+'\u2013'+closes(String(PL[PL.length-1].label))
+    : D.periods[0]+'\u2013'+(D.periods[D.periods.length-1]+1);
+  $('#hdr').textContent = D.n.toLocaleString()+' signings \u00b7 '+span+
+    ' \u00b7 '+D.countries.length+' countries';
+})();
 
 /* ---------- index ---------- */
 const COLS = [
@@ -3569,9 +3584,6 @@ const ME=D.methods;
   const set=(id,v)=>{const el=$('#'+id); if(el) el.textContent=v;};
   set('ov-y0',lo); set('ov-y1',hi+1); set('ov-n',ME.n.toLocaleString());
   set('ov-span',span); set('ft-span',span);
-  const lk=$('#ft-methods');
-  if(lk) lk.onclick=e=>{e.preventDefault();$('#t-me').click();
-                        window.scrollTo({top:0,behavior:'smooth'});};
 })();
 const pc=(v,d)=>(100*v).toFixed(d===undefined?1:d)+'%';
 const EXLABEL={
