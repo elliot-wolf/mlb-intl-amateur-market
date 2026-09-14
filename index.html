@@ -3268,7 +3268,6 @@ function sceneAges(){
   const pw=w-p2.l-p2.r, slot=pw/B.length, cw=Math.min(88,slot-30);
   const pc=v=>Math.round(100*v);                 // whole numbers only, and the
   const pcP=v=>100-pc(v);                        // pair always sums to 100
-  const yng=B[0], old=B[B.length-1];
   // The second view is each band's share of all signings, on the signings whose
   // age falls in a band, so the five add to 100%. Its scale tops out at the next
   // ten per cent above the biggest band, so the tallest column does not read as
@@ -3277,13 +3276,9 @@ function sceneAges(){
   let top=Math.ceil(mxs*10)/10; if(top-mxs<0.03) top+=0.1;
   // Set exactly as the journey's title: the large heading in ink, then the
   // two-colour rule.
+  // No sentence under the title (Elliot's call, 2026-09-14).
   let o='<p class="fig-h fig-h-lg">Hitters sign younger than pitchers.</p>'+
-    '<div class="fig-rule"></div>'+
-    '<p class="fig-s">'+pc(yng.hit_share)+'% of the '+yng.n.toLocaleString()+
-    ' signed '+yng.band+' are hitters, against '+pc(old.hit_share)+'% of the '+
-    old.n.toLocaleString()+' signed at '+old.band.replace('+','')+' or older. '+
-    'Hitters are '+pc(hs)+'% of all '+tot.toLocaleString()+' signings, and '+
-    'every column starts there before settling on its own age band.</p>';
+    '<div class="fig-rule"></div>';
   // The legend and the toggle share a row, so the control sits beside the key
   // it changes the meaning of.
   o+='<div class="gr-bar bs-bar ag-bar">'+
