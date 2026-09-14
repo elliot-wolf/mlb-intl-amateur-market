@@ -3382,10 +3382,10 @@ function drawStory(){
 // 'best' is built and works, but is held back from phase 1 along with the
 // signing bonuses it leans on. The public build also strips story.best
 // from the payload, so the figures are not in the page source either.
-// 'role' (career WAR by pitching role) and 'cities' (the Dominican and
-// Venezuelan spike maps side by side) came off the page on 2026-09-14; both
-// are still built. 'vzmap' is Venezuela alone, class by class.
-const V1_STORY=['funnel','year','growth','ages','vzmap'];
+// 'role' (career WAR by pitching role), 'cities' (the Dominican and
+// Venezuelan spike maps side by side) and 'vzmap' (Venezuela alone, class by
+// class) came off the page on 2026-09-14; all three are still built.
+const V1_STORY=['funnel','year','growth','ages'];
 function renderBlocks(sel, tab){
   const host=$(sel); if(!host) return;
   host.innerHTML=STEPS.map((st,i)=>[st,i])
