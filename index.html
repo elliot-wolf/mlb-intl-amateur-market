@@ -1361,11 +1361,13 @@ const STEPS=[
   // One scroll, not five. Every column arrives at once from the market split
   // drawn above them, so the thing that moves is the distance each age band
   // sits from the average -- which is the comparison the chart is making.
-  {scene:'ages', count:100*SY.pos[0].share, fmt:v=>v.toFixed(1)+'%',
+  // Titled inside the figure the way the journey is, so no block heading,
+  // deck or running figure above it (Elliot's call, 2026-09-14). The label
+  // still names the figure for screen readers.
+  {scene:'ages', headInChart:true, noHead:true,
+   count:100*SY.pos[0].share, fmt:v=>v.toFixed(1)+'%',
    label:'Position split by age at signing, against the '+
      (100*SY.pos[0].share).toFixed(1)+'% market average',
-   h:'PLACEHOLDER heading',
-   p:'PLACEHOLDER. Clubs buy bats young and arms late.',
    foot:ageFoot()},
   {scene:'compare', metric:'bonus', count:SY.pos[0].med_bonus,
    label:'PLACEHOLDER label', h:'PLACEHOLDER heading',
@@ -3257,8 +3259,10 @@ function sceneAges(){
   const pc=v=>Math.round(100*v);                 // whole numbers only, and the
   const pcP=v=>100-pc(v);                        // pair always sums to 100
   const yng=B[0], old=B[B.length-1];
-  let o='<p class="fig-h"><span class="fig-dr">Hitters</span> sign younger than '+
-    '<span class="fig-vz">pitchers</span>.</p>'+
+  // Set exactly as the journey's title: the large heading in ink, then the
+  // two-colour rule. The legend below carries which colour is which.
+  let o='<p class="fig-h fig-h-lg">Hitters sign younger than pitchers.</p>'+
+    '<div class="fig-rule"></div>'+
     '<p class="fig-s">'+pc(yng.hit_share)+'% of the '+yng.n.toLocaleString()+
     ' signed '+yng.band+' are hitters, against '+pc(old.hit_share)+'% of the '+
     old.n.toLocaleString()+' signed at '+old.band.replace('+','')+' or older. '+
