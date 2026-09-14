@@ -170,6 +170,7 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .sc-jrny text.jr-age{font-size:20px;fill:var(--ink-2);font-variant-numeric:tabular-nums}
 .sc-jrny text.jr-age.on{fill:var(--chart-h);font-weight:600}
 .sc-jrny text.jr-name{font-family:inherit;font-size:11.5px;font-weight:600;fill:var(--ink-2)}
+.sc-jrny tspan.jr-fn{font-size:8px}
 .sc-jrny text.jr-cnt{font-size:10px;fill:var(--muted);font-variant-numeric:tabular-nums}
 .sc-svg text.fn-l2{font-family:inherit;font-size:11.5px;fill:var(--muted)}
 .sc-svg .lg text{fill:var(--ink-2);font-size:10.5px}
@@ -1951,6 +1952,14 @@ function vzFoot(){
     'no gazetteer carries. Coordinates from GeoNames (CC BY 4.0).';
   return o;
 }
+// Footnote marker on "VSL", matching the caption. Raised with dy rather than
+// baseline-shift, which Firefox ignores; the closing text drops back down.
+function jrLabel(l){
+  const i=l.indexOf('VSL');
+  if(i<0) return l;
+  return l.slice(0,i+3)+'<tspan class="jr-fn" dy="-5">1</tspan>'+
+    '<tspan dy="5">'+l.slice(i+3)+'</tspan>';
+}
 function sceneJourney(lit){
   const J=SY.journey, M=SY.journey_meta;
   if(!J||J.length<2) return '';
@@ -2019,7 +2028,7 @@ function sceneJourney(lit){
        '<text class="jr-age'+(last?' on':'')+'" x="'+cx.toFixed(1)+'" y="'+ys.age+
        '" text-anchor="middle">'+d.age.toFixed(1)+'</text>'+
        '<text class="jr-name" x="'+cx.toFixed(1)+'" y="'+ys.name+
-       '" text-anchor="middle">'+d.label+'</text>'+
+       '" text-anchor="middle">'+jrLabel(d.label)+'</text>'+
        '<text class="jr-cnt" x="'+cx.toFixed(1)+'" y="'+ys.cnt+
        '" text-anchor="middle">'+cnt+'</text></g>';
   });
@@ -2130,9 +2139,13 @@ const LADDERS={
          entryWord:'the draft',
          alt:SY.draft_alt}
 };
-// One footnote for the whole block, so the DSL/VSL label on the timeline is
-// not the only thing carrying the geography.
-function jrnyFoot(){
+// Elliot is rewriting this caption in his own words and keeping only the data
+// notes the figure cannot carry itself. Until then it is his placeholder, keyed
+// by the superscript 1 on "VSL" in the timeline label.
+function jrnyFoot(){ return '\u00b9 Find date Venezuelan summer league stopped.'; }
+// The caption as it stood on 2026-09-14, unused. Kept because every figure in it
+// is derived and it is the quickest place to read them back.
+function jrnyFootFull(){
   const M=SY.journey_meta, J=SY.journey||[];
   if(!M) return '';
   const us=J.length>1?J[J.length-2]:null, sl=J.length>1?J[1]:null;
@@ -3508,23 +3521,19 @@ function paintStage(el,k,first){
   if(fig) fig.setAttribute('aria-label', sg.label);
   const lab=el.querySelector('.fn-lab');
   if(lab) lab.textContent=sg.label;
-  const put=()=>{
-    const h=el.querySelector('.sb-h'), c=el.querySelector('.sb-cap');
-    if(h) h.textContent=sg.h||'';
-    if(c) c.textContent=sg.p||'';
-    el.querySelector('.stage-label').textContent=sg.label;
-    el.querySelector('.stage-foot').textContent=sg.foot||'';
-  };
-  const sw=[...el.querySelectorAll('.sb-swap')];
-  const _h=el.querySelector('.sb-h'), _c=el.querySelector('.sb-cap');
-  const changes = (_h && _h.textContent!==sg.h) ||
-                  (_c && _c.textContent!==sg.p) ||
-                  el.querySelector('.stage-label').textContent!==sg.label ||
-                  el.querySelector('.stage-foot').textContent!==(sg.foot||'');
-  if(first||REDUCE||document.hidden||!changes){ put(); }
+  // Only the text that actually changes fades. The journey's caption is the
+  // same at every stage, and fading everything on every stage made it blink
+  // out and back each time the reader scrolled.
+  const diff=[[el.querySelector('.sb-h'), sg.h||''],
+              [el.querySelector('.sb-cap'), sg.p||''],
+              [el.querySelector('.stage-label'), sg.label],
+              [el.querySelector('.stage-foot'), sg.foot||'']]
+    .filter(q=>q[0] && q[0].textContent!==q[1]);
+  const put=()=>diff.forEach(q=>{ q[0].textContent=q[1]; });
+  if(first||REDUCE||document.hidden||!diff.length){ put(); }
   else {
-    sw.forEach(n=>n.classList.add('out'));
-    setTimeout(()=>{ put(); sw.forEach(n=>n.classList.remove('out')); }, 200);
+    diff.forEach(q=>q[0].classList.add('out'));
+    setTimeout(()=>{ put(); diff.forEach(q=>q[0].classList.remove('out')); }, 200);
   }
   tweenHero(el.querySelector('.fn-count') || el.querySelector('.stage-count'),
             Object.assign({},st,sg), sg.count, first);
