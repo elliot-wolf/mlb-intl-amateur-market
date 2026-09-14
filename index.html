@@ -164,6 +164,10 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .vz-svg line.vz-cut{stroke:var(--line-2);stroke-width:1;stroke-dasharray:3 3}
 .vz-svg rect.vz-hit{fill:transparent;cursor:pointer}
 .vz-svg path.vz-cur{fill:var(--chart-p)}
+.sc-ages path.ag-d{fill:var(--line-2)}
+.sc-ages text.ag-dv{font-size:11px;fill:var(--ink-2);font-variant-numeric:tabular-nums}
+.sc-ages text.ag-dh{font-size:11px;fill:var(--muted)}
+.sc-ages line.ag-base{stroke:var(--line);stroke-width:1}
 .sc-ages text.ag-in{font-size:12.5px;font-weight:700;fill:var(--surface);
   font-variant-numeric:tabular-nums}
 
@@ -514,12 +518,15 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .sblocks.anim .sblock.in svg path.mk,.sblocks.anim .sblock.in svg rect.mk{transform:scaleX(1)}
 .sblocks.anim .sblock svg rect.mk.v{transform:scaleY(0);transform-origin:center bottom}
 .sblocks.anim .sblock.in svg rect.mk.v{transform:scaleY(1)}
+.sblocks.anim .sblock svg path.ag-d{transform:scaleY(0);transform-box:fill-box;
+  transform-origin:center bottom;transition:transform .7s cubic-bezier(.22,.61,.36,1) .45s}
+.sblocks.anim .sblock.in svg path.ag-d{transform:scaleY(1)}
 .sblocks.anim .sblock svg text{opacity:0;transition:opacity .45s ease}
 .sblocks.anim .sblock.in svg text{opacity:1}
 .sblocks.anim .sblock .stage-count{font-variant-numeric:tabular-nums}
 @media (prefers-reduced-motion:reduce){
   .sblocks.anim .sblock,.sblocks.anim .sblock svg path.mk,
-  .sblocks.anim .sblock svg rect.mk,
+  .sblocks.anim .sblock svg rect.mk,.sblocks.anim .sblock svg path.ag-d,
   .sblocks.anim .sblock svg text{opacity:1;transform:none;transition:none}
 }
 @media (max-width:900px){
@@ -3233,9 +3240,10 @@ function ageFoot(){
     'runs from '+Math.round(100*hi.hit_share)+'% of the '+hi.n.toLocaleString()+
     ' signed '+say(hi)+' down to '+Math.round(100*lo.hit_share)+'% of the '+
     lo.n.toLocaleString()+' signed '+say(lo)+'. Each column is one age band '+
-    'split by position, so every column reaches 100%; the counts beneath show '+
-    'how far the bands differ in size. Percentages are rounded, and the pair is '+
-    'taken from the hitter share so the two always total 100.';
+    'split by position, so every column reaches 100%. The bars beneath show how '+
+    'the '+B.reduce((a,b)=>a+b.n,0).toLocaleString()+' signings whose age falls '+
+    'in one of the five bands divide between them. Percentages are rounded, and '+
+    'the pair is taken from the hitter share so the two always total 100.';
 }
 // 100% stacked columns: each age band is one whole, split by position, so the
 // bands are read against each other rather than each summing to 100% on its
@@ -3248,13 +3256,13 @@ function ageFoot(){
 // they need 830px against a 950px viewport; apart they needed 1,171px.
 function sceneAges(){
   const H=SY.pos[0], P=SY.pos[1], tot=H.n+P.n, hs=H.n/tot;
-  const B=SY.age_bands, w=760, h=340, GAP=2;
+  const B=SY.age_bands, w=760, h=398, GAP=2;
   // No mark for the overall split. It had a bar of its own, which read as a
   // separate chart, and then a rule across the columns, which read as clutter.
   // The animation carries it instead: every column starts on the market share
   // and leaves it, so the common origin is the reference. The number itself is
   // in the sentence above the chart.
-  const p2={l:26,t:44,r:26,b:66};
+  const p2={l:26,t:44,r:26,b:124};
   const pw=w-p2.l-p2.r, ph=h-p2.t-p2.b, slot=pw/B.length, cw=Math.min(88,slot-30);
   const pc=v=>Math.round(100*v);                 // whole numbers only, and the
   const pcP=v=>100-pc(v);                        // pair always sums to 100
@@ -3306,10 +3314,29 @@ function sceneAges(){
        '" data-y0="'+(p2.t+(ph-hh0)/2+4).toFixed(1)+'" x="'+cx+'" y="'+
        (p2.t+(ph-hh)/2+4).toFixed(1)+'" text-anchor="middle">'+pcP(d.hit_share)+'%</text>'+
        '<text class="vlab" x="'+cx+'" y="'+(p2.t+ph+22)+'" text-anchor="middle">'+
-       d.band+'</text>'+
-       '<text x="'+cx+'" y="'+(p2.t+ph+38)+'" text-anchor="middle">n='+
-       d.n.toLocaleString()+'</text>';
+       d.band+'</text>';
   });
+  // Under the band names, how the signings divide across the bands. Every
+  // column is the same height, so the columns cannot show that the two youngest
+  // bands hold two thirds of the market; these can. Grey, so they add no third
+  // colour beside hitters and pitchers. The base is the signings whose age falls
+  // in a band, so the five add to 100%.
+  const nb=B.reduce((a,b)=>a+b.n,0), mxs=Math.max(...B.map(b=>b.n))/nb;
+  const yb=h-8, MH=44, R=3, bw=Math.min(40, cw*0.45);
+  o+='<text class="ag-dh" x="'+p2.l+'" y="'+(p2.t+ph+48)+'">Share of all signings</text>';
+  B.forEach((d,i)=>{
+    const cx=p2.l+slot*i+slot/2, sh=d.n/nb, bh=Math.max(2, MH*sh/mxs);
+    const x=cx-bw/2, top=yb-bh;
+    o+='<path class="ag-d" d="M'+x.toFixed(1)+','+yb+'V'+(top+R).toFixed(1)+
+       'a'+R+','+R+' 0 0 1 '+R+','+(-R)+'H'+(x+bw-R).toFixed(1)+
+       'a'+R+','+R+' 0 0 1 '+R+','+R+'V'+yb+'Z"><title>'+d.band+': '+
+       d.n.toLocaleString()+' of the '+nb.toLocaleString()+' signings in these bands ('+
+       (100*sh).toFixed(1)+'%)</title></path>'+
+       '<text class="ag-dv" x="'+cx.toFixed(1)+'" y="'+(top-6).toFixed(1)+
+       '" text-anchor="middle">'+Math.round(100*sh)+'%</text>';
+  });
+  o+='<line class="ag-base" x1="'+(p2.l+slot/2-bw/2).toFixed(1)+'" y1="'+yb+'" x2="'+
+     (p2.l+slot*(B.length-0.5)+bw/2).toFixed(1)+'" y2="'+yb+'"/>';
   return o+'</svg>';
 }
 // Every column starts at the market split drawn directly above it and travels
