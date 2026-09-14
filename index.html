@@ -164,10 +164,15 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .vz-svg line.vz-cut{stroke:var(--line-2);stroke-width:1;stroke-dasharray:3 3}
 .vz-svg rect.vz-hit{fill:transparent;cursor:pointer}
 .vz-svg path.vz-cur{fill:var(--chart-p)}
-.sc-ages path.ag-d{fill:var(--line-2)}
-.sc-ages text.ag-dv{font-size:11px;fill:var(--ink-2);font-variant-numeric:tabular-nums}
-.sc-ages text.ag-dh{font-size:11px;fill:var(--muted)}
-.sc-ages line.ag-base{stroke:var(--line);stroke-width:1}
+.ag-bar{justify-content:space-between;flex-wrap:wrap;row-gap:8px;margin:2px 0 4px}
+.ag-lg{display:flex;gap:16px;font-family:"IBM Plex Mono",monospace;font-size:12px;
+  color:var(--ink-2);transition:opacity .3s ease}
+.ag-lg.off{opacity:0}
+.ag-key{display:inline-flex;align-items:center;gap:6px}
+.ag-sw{display:inline-block;width:10px;height:10px;border-radius:2px}
+.ag-tg{display:flex;gap:8px;flex-wrap:wrap}
+.sc-ages text.ag-sv{font-size:12.5px;font-weight:700;fill:var(--ink-2);
+  font-variant-numeric:tabular-nums}
 .sc-ages text.ag-in{font-size:12.5px;font-weight:700;fill:var(--surface);
   font-variant-numeric:tabular-nums}
 
@@ -518,15 +523,12 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .sblocks.anim .sblock.in svg path.mk,.sblocks.anim .sblock.in svg rect.mk{transform:scaleX(1)}
 .sblocks.anim .sblock svg rect.mk.v{transform:scaleY(0);transform-origin:center bottom}
 .sblocks.anim .sblock.in svg rect.mk.v{transform:scaleY(1)}
-.sblocks.anim .sblock svg path.ag-d{transform:scaleY(0);transform-box:fill-box;
-  transform-origin:center bottom;transition:transform .7s cubic-bezier(.22,.61,.36,1) .45s}
-.sblocks.anim .sblock.in svg path.ag-d{transform:scaleY(1)}
 .sblocks.anim .sblock svg text{opacity:0;transition:opacity .45s ease}
 .sblocks.anim .sblock.in svg text{opacity:1}
 .sblocks.anim .sblock .stage-count{font-variant-numeric:tabular-nums}
 @media (prefers-reduced-motion:reduce){
   .sblocks.anim .sblock,.sblocks.anim .sblock svg path.mk,
-  .sblocks.anim .sblock svg rect.mk,.sblocks.anim .sblock svg path.ag-d,
+  .sblocks.anim .sblock svg rect.mk,
   .sblocks.anim .sblock svg text{opacity:1;transform:none;transition:none}
 }
 @media (max-width:900px){
@@ -1370,12 +1372,12 @@ const STEPS=[
   // sits from the average -- which is the comparison the chart is making.
   // Titled inside the figure the way the journey is, so no block heading,
   // deck or running figure above it (Elliot's call, 2026-09-14). The label
-  // still names the figure for screen readers.
+  // still names the figure for screen readers. No caption either, also his
+  // call; ageFoot() stays in the file, unused, for its derived figures.
   {scene:'ages', headInChart:true, noHead:true,
    count:100*SY.pos[0].share, fmt:v=>v.toFixed(1)+'%',
    label:'Position split by age at signing, against the '+
-     (100*SY.pos[0].share).toFixed(1)+'% market average',
-   foot:ageFoot()},
+     (100*SY.pos[0].share).toFixed(1)+'% market average'},
   {scene:'compare', metric:'bonus', count:SY.pos[0].med_bonus,
    label:'PLACEHOLDER label', h:'PLACEHOLDER heading',
    p:'PLACEHOLDER. Median signing bonus by position.',
@@ -3256,19 +3258,25 @@ function ageFoot(){
 // they need 830px against a 950px viewport; apart they needed 1,171px.
 function sceneAges(){
   const H=SY.pos[0], P=SY.pos[1], tot=H.n+P.n, hs=H.n/tot;
-  const B=SY.age_bands, w=760, h=398, GAP=2;
+  const B=SY.age_bands, w=760, GAP=2;
   // No mark for the overall split. It had a bar of its own, which read as a
   // separate chart, and then a rule across the columns, which read as clutter.
   // The animation carries it instead: every column starts on the market share
   // and leaves it, so the common origin is the reference. The number itself is
   // in the sentence above the chart.
-  const p2={l:26,t:44,r:26,b:124};
-  const pw=w-p2.l-p2.r, ph=h-p2.t-p2.b, slot=pw/B.length, cw=Math.min(88,slot-30);
+  const ph=230, p2={l:26,t:28,r:26,b:40}, h=p2.t+ph+p2.b;
+  const pw=w-p2.l-p2.r, slot=pw/B.length, cw=Math.min(88,slot-30);
   const pc=v=>Math.round(100*v);                 // whole numbers only, and the
   const pcP=v=>100-pc(v);                        // pair always sums to 100
   const yng=B[0], old=B[B.length-1];
+  // The second view is each band's share of all signings, on the signings whose
+  // age falls in a band, so the five add to 100%. Its scale tops out at the next
+  // ten per cent above the biggest band, with room left for that band's label,
+  // so the tallest column does not read as a whole the way it does in the split.
+  const nb=B.reduce((a,b)=>a+b.n,0), mxs=Math.max(...B.map(b=>b.n))/nb;
+  let top=Math.ceil(mxs*10)/10; if(top-mxs<0.03) top+=0.1;
   // Set exactly as the journey's title: the large heading in ink, then the
-  // two-colour rule. The legend below carries which colour is which.
+  // two-colour rule.
   let o='<p class="fig-h fig-h-lg">Hitters sign younger than pitchers.</p>'+
     '<div class="fig-rule"></div>'+
     '<p class="fig-s">'+pc(yng.hit_share)+'% of the '+yng.n.toLocaleString()+
@@ -3276,34 +3284,50 @@ function sceneAges(){
     old.n.toLocaleString()+' signed at '+old.band.replace('+','')+' or older. '+
     'Hitters are '+pc(hs)+'% of all '+tot.toLocaleString()+' signings, and '+
     'every column starts there before settling on its own age band.</p>';
-  o+='<svg class="sc-svg sc-ages" viewBox="0 0 '+w+' '+h+
+  // The legend and the toggle share a row, so the control sits beside the key
+  // it changes the meaning of.
+  o+='<div class="gr-bar bs-bar ag-bar">'+
+     '<span class="ag-lg">'+
+       '<span class="ag-key"><span class="ag-sw" style="background:var(--chart-h)"></span>Hitters</span>'+
+       '<span class="ag-key"><span class="ag-sw" style="background:var(--chart-p)"></span>Pitchers</span>'+
+     '</span><span class="ag-tg" role="group" aria-label="What the columns show">'+
+     AG_M.map(m=>'<button class="btn bs-t'+(m[0]==='split'?' on':'')+'" type="button" data-m="'+
+       m[0]+'" aria-pressed="'+(m[0]==='split')+'">'+m[1]+'</button>').join('')+
+     '</span></div>';
+  o+='<svg class="sc-svg sc-ages" data-mode="split" viewBox="0 0 '+w+' '+h+
      '" preserveAspectRatio="xMidYMid meet"><defs>';
-  B.forEach((d,i)=>{ const x=p2.l+slot*i+(slot-cw)/2;
-    o+='<clipPath id="ac'+i+'"><rect x="'+x.toFixed(1)+'" y="'+p2.t+'" width="'+cw+
-       '" height="'+ph+'" rx="6"/></clipPath>'; });
-  o+='</defs><g class="lg">'+
-     '<rect x="'+p2.l+'" y="8" width="9" height="9" rx="2" fill="var(--chart-h)"/>'+
-     '<text x="'+(p2.l+14)+'" y="16">Hitters</text>'+
-     '<rect x="'+(p2.l+74)+'" y="8" width="9" height="9" rx="2" fill="var(--chart-p)"/>'+
-     '<text x="'+(p2.l+88)+'" y="16">Pitchers</text></g>';
+  // The clip is the column's rounded outline. In the share view it shrinks with
+  // the column, so the corners follow the top down instead of being cut square.
+  B.forEach((d,i)=>{
+    const x=p2.l+slot*i+(slot-cw)/2, sh=ph*(d.n/nb)/top;
+    o+='<clipPath id="ac'+i+'"><rect class="ag-clip" data-col="'+i+'" data-y="'+p2.t+
+       '" data-hh="'+ph+'" data-sy="'+(p2.t+ph-sh).toFixed(1)+'" data-sh="'+sh.toFixed(1)+
+       '" x="'+x.toFixed(1)+'" y="'+p2.t+'" width="'+cw+'" height="'+ph+'" rx="6"/></clipPath>';
+  });
+  o+='</defs>';
   const hh0=ph*hs;
   B.forEach((d,i)=>{
     const x=p2.l+slot*i+(slot-cw)/2, hh=ph*d.hit_share, cx=(x+cw/2).toFixed(1);
     const hy=p2.t+ph-hh, py=p2.t;
+    const share=d.n/nb, sh=ph*share/top, sy=p2.t+ph-sh;
+    const tSplit=d.band+', pitchers: '+d.pitchers.toLocaleString()+' of '+
+      d.n.toLocaleString()+' ('+(100*(1-d.hit_share)).toFixed(1)+'%)';
+    const tShare=d.band+': '+d.n.toLocaleString()+' of the '+nb.toLocaleString()+
+      ' signings in these bands ('+(100*share).toFixed(1)+'%)';
     o+='<g clip-path="url(#ac'+i+')">'+
-       '<rect class="mk v" data-col="'+i+'" data-y="'+hy.toFixed(1)+'" data-hh="'+
+       '<rect class="mk v" data-kind="h" data-col="'+i+'" data-y="'+hy.toFixed(1)+'" data-hh="'+
        hh.toFixed(1)+'" data-y0="'+(p2.t+ph-hh0).toFixed(1)+'" data-h0="'+
-       hh0.toFixed(1)+'" x="'+x.toFixed(1)+'" y="'+hy.toFixed(1)+'" width="'+cw+
-       '" height="'+hh.toFixed(1)+'" fill="var(--chart-h)"><title>'+d.band+
+       hh0.toFixed(1)+'" data-yb="'+(p2.t+ph+2)+'" x="'+x.toFixed(1)+'" y="'+hy.toFixed(1)+
+       '" width="'+cw+'" height="'+hh.toFixed(1)+'" fill="var(--chart-h)"><title>'+d.band+
        ', hitters: '+d.hitters.toLocaleString()+' of '+d.n.toLocaleString()+
        ' ('+(100*d.hit_share).toFixed(1)+'%)</title></rect>'+
-       '<rect class="mk v" data-col="'+i+'" data-y="'+py+'" data-hh="'+
+       '<rect class="mk v" data-kind="p" data-col="'+i+'" data-y="'+py+'" data-hh="'+
        (ph-hh-GAP).toFixed(1)+'" data-y0="'+py+'" data-h0="'+
-       (ph-hh0-GAP).toFixed(1)+'" x="'+x.toFixed(1)+'" y="'+py+'" width="'+cw+
-       '" height="'+(ph-hh-GAP).toFixed(1)+'" fill="var(--chart-p)"><title>'+
-       d.band+', pitchers: '+d.pitchers.toLocaleString()+' of '+
-       d.n.toLocaleString()+' ('+(100*(1-d.hit_share)).toFixed(1)+'%)</title>'+
-       '</rect></g>'+
+       (ph-hh0-GAP).toFixed(1)+'" data-full="'+ph+'" data-sy="'+sy.toFixed(1)+
+       '" data-sh="'+sh.toFixed(1)+'" data-tsplit="'+tSplit+'" data-tshare="'+tShare+
+       '" x="'+x.toFixed(1)+'" y="'+py+'" width="'+cw+
+       '" height="'+(ph-hh-GAP).toFixed(1)+'" fill="var(--chart-p)"><title>'+tSplit+
+       '</title></rect></g>'+
        // inside the segment, and the label rides the boundary as it moves
        '<text class="ag-in" data-col="'+i+'" data-pct="'+pc(d.hit_share)+
        '" data-p0="'+pc(hs)+'" data-y="'+(p2.t+ph-hh/2+4).toFixed(1)+
@@ -3313,31 +3337,87 @@ function sceneAges(){
        '" data-p0="'+pcP(hs)+'" data-y="'+(p2.t+(ph-hh)/2+4).toFixed(1)+
        '" data-y0="'+(p2.t+(ph-hh0)/2+4).toFixed(1)+'" x="'+cx+'" y="'+
        (p2.t+(ph-hh)/2+4).toFixed(1)+'" text-anchor="middle">'+pcP(d.hit_share)+'%</text>'+
+       // the share view's label, above its column; hidden until that view
+       '<text class="ag-sv" data-col="'+i+'" x="'+cx+'" y="'+(sy-8).toFixed(1)+
+       '" text-anchor="middle" style="opacity:0">'+pc(share)+'%</text>'+
        '<text class="vlab" x="'+cx+'" y="'+(p2.t+ph+22)+'" text-anchor="middle">'+
        d.band+'</text>';
   });
-  // Under the band names, how the signings divide across the bands. Every
-  // column is the same height, so the columns cannot show that the two youngest
-  // bands hold two thirds of the market; these can. Grey, so they add no third
-  // colour beside hitters and pitchers. The base is the signings whose age falls
-  // in a band, so the five add to 100%.
-  const nb=B.reduce((a,b)=>a+b.n,0), mxs=Math.max(...B.map(b=>b.n))/nb;
-  const yb=h-8, MH=44, R=3, bw=Math.min(40, cw*0.45);
-  o+='<text class="ag-dh" x="'+p2.l+'" y="'+(p2.t+ph+48)+'">Share of all signings</text>';
-  B.forEach((d,i)=>{
-    const cx=p2.l+slot*i+slot/2, sh=d.n/nb, bh=Math.max(2, MH*sh/mxs);
-    const x=cx-bw/2, top=yb-bh;
-    o+='<path class="ag-d" d="M'+x.toFixed(1)+','+yb+'V'+(top+R).toFixed(1)+
-       'a'+R+','+R+' 0 0 1 '+R+','+(-R)+'H'+(x+bw-R).toFixed(1)+
-       'a'+R+','+R+' 0 0 1 '+R+','+R+'V'+yb+'Z"><title>'+d.band+': '+
-       d.n.toLocaleString()+' of the '+nb.toLocaleString()+' signings in these bands ('+
-       (100*sh).toFixed(1)+'%)</title></path>'+
-       '<text class="ag-dv" x="'+cx.toFixed(1)+'" y="'+(top-6).toFixed(1)+
-       '" text-anchor="middle">'+Math.round(100*sh)+'%</text>';
-  });
-  o+='<line class="ag-base" x1="'+(p2.l+slot/2-bw/2).toFixed(1)+'" y1="'+yb+'" x2="'+
-     (p2.l+slot*(B.length-0.5)+bw/2).toFixed(1)+'" y2="'+yb+'"/>';
   return o+'</svg>';
+}
+// The toggle. "Share of all signings" drops each hitter segment out of the
+// bottom of its column while the pitcher segment fills in behind it, then
+// resizes the column to its band's share of the market. Going back runs the
+// same moves in reverse. The legend fades in that view: the columns there are
+// every signing, not pitchers.
+const AG_M=[['split','Hitters and pitchers'],['share','Share of all signings']];
+function setAgesMode(root, m){
+  const svg=root.querySelector('svg.sc-ages'); if(!svg) return;
+  const share=m==='share';
+  svg.dataset.mode=m;
+  const lg=root.querySelector('.ag-lg'); if(lg) lg.classList.toggle('off', share);
+  const q=sel=>[...svg.querySelectorAll(sel)];
+  const Hr=q('rect.mk.v[data-kind="h"]'), Pr=q('rect.mk.v[data-kind="p"]'),
+        Cl=q('rect.ag-clip'), Lab=q('text.ag-in'), SV=q('text.ag-sv');
+  Pr.forEach(r=>{ const t=r.querySelector('title');
+    if(t) t.textContent=share ? r.dataset.tshare : r.dataset.tsplit; });
+  const settleLabels=()=>Lab.forEach(t=>{
+    t.setAttribute('y', t.dataset.y); t.textContent=t.dataset.pct+'%'; });
+  if(typeof d3!=='undefined') d3.selectAll([...Hr,...Pr,...Cl,...Lab,...SV]).interrupt();
+  if(REDUCE || document.hidden || typeof d3==='undefined'){
+    const put=(el,y,hh)=>{ el.setAttribute('y',y); el.setAttribute('height',hh); };
+    Hr.forEach(r=>put(r, share?r.dataset.yb:r.dataset.y, r.dataset.hh));
+    Pr.forEach(r=>put(r, share?r.dataset.sy:r.dataset.y, share?r.dataset.sh:r.dataset.hh));
+    Cl.forEach(r=>put(r, share?r.dataset.sy:r.dataset.y, share?r.dataset.sh:r.dataset.hh));
+    settleLabels();
+    Lab.forEach(t=>{ t.style.opacity=share?'0':'1'; });
+    SV.forEach(t=>{ t.style.opacity=share?'1':'0'; });
+    return;
+  }
+  const T1=450, T2=650, ST=60, E=d3.easeCubicInOut;
+  const col=el=>(+el.dataset.col)*ST;
+  const ds=k=>function(){ return this.dataset[k]; };
+  if(share){
+    d3.selectAll(Lab).transition().duration(180).style('opacity',0);
+    d3.selectAll(SV).style('opacity',0);
+    // one easing for both segments, so the gap between them closes rather than
+    // opening as the hitters leave
+    d3.selectAll(Hr).transition().delay(function(){ return col(this); })
+      .duration(T1).ease(E).attr('y', ds('yb'));
+    d3.selectAll(Pr).transition().delay(function(){ return col(this); })
+      .duration(T1).ease(E).attr('y', ds('y')).attr('height', ds('full'))
+      .transition().duration(T2).ease(E).attr('y', ds('sy')).attr('height', ds('sh'));
+    d3.selectAll(Cl).transition().delay(function(){ return col(this)+T1; })
+      .duration(T2).ease(E).attr('y', ds('sy')).attr('height', ds('sh'));
+    d3.selectAll(SV).transition().delay(function(){ return col(this)+T1+T2-120; })
+      .duration(260).style('opacity',1);
+  } else {
+    d3.selectAll(SV).transition().duration(180).style('opacity',0);
+    d3.selectAll(Pr).transition().delay(function(){ return col(this); })
+      .duration(T2).ease(E).attr('y', ds('y')).attr('height', ds('full'))
+      .transition().duration(T1).ease(E).attr('height', ds('hh'));
+    d3.selectAll(Cl).transition().delay(function(){ return col(this); })
+      .duration(T2).ease(E).attr('y', ds('y')).attr('height', ds('hh'));
+    d3.selectAll(Hr).attr('y', ds('yb')).attr('height', ds('hh'))
+      .transition().delay(function(){ return col(this)+T2; })
+      .duration(T1).ease(E).attr('y', ds('y'));
+    settleLabels();
+    d3.selectAll(Lab).transition().delay(function(){ return col(this)+T2+T1-120; })
+      .duration(260).style('opacity',1);
+  }
+}
+function wireAges(root){
+  if(root.dataset.agWired) return;
+  const bar=root.querySelector('.ag-bar'); if(!bar) return;
+  root.dataset.agWired='1';
+  bar.addEventListener('click',e=>{
+    const b=e.target.closest('.bs-t'); if(!b) return;
+    const svg=root.querySelector('svg.sc-ages');
+    if(!svg || svg.dataset.mode===b.dataset.m) return;
+    bar.querySelectorAll('.bs-t').forEach(x=>{
+      const on=x===b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on?'true':'false'); });
+    setAgesMode(root, b.dataset.m);
+  });
 }
 // Every column starts at the market split drawn directly above it and travels
 // to its own, left to right. The distance it moves IS its deviation from the
@@ -3347,7 +3427,9 @@ function sceneAges(){
 // transitionable, and d3 interpolates it everywhere.
 function animateAges(root){
   const svg=root.querySelector('svg.sc-ages');
-  if(!svg || REDUCE || document.hidden || typeof d3==='undefined') return;
+  // the replay belongs to the split view; the share view sits still
+  if(!svg || svg.dataset.mode==='share' || REDUCE || document.hidden ||
+     typeof d3==='undefined') return;
   svg.querySelectorAll('rect.mk.v').forEach(r=>{
     r.setAttribute('y', r.dataset.y0); r.setAttribute('height', r.dataset.h0); });
   svg.querySelectorAll('text[data-pct]').forEach(t=>{
@@ -3449,6 +3531,7 @@ function drawStory(){
     if(b.querySelector('.bs-wrap')) wireBest(b);
     if(b.querySelector('.cty-wrap')) wireCities(b);
     if(b.querySelector('.vz-wrap')) wireVz(b);
+    if(b.querySelector('svg.sc-ages')) wireAges(b);
   });
   if(!REDUCE){ $('#sc-blocks').classList.add('anim');
                $('#cmp-blocks').classList.add('anim'); }
