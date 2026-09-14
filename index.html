@@ -906,7 +906,6 @@ footer{max-width:1280px;margin:0 auto;padding:0 22px 60px}
     <div class="count">
       <div class="note">Showing <b id="n-shown">0</b> of <b id="n-total">0</b> signings</div>
       <div class="note" id="n-sub"></div>
-      <a class="note dl" href="data/census/census_with_outcomes.csv" download>Download all <span id="dl-n">5,299</span> rows (CSV)</a>
     </div>
     <div class="wrap"><table>
       <thead><tr id="thead"></tr></thead>
@@ -989,9 +988,11 @@ footer{max-width:1280px;margin:0 auto;padding:0 22px 60px}
   </section>
 
 <footer><div class="foot">
-  <div><h4>What this is</h4><p>A near-complete census of international amateur free agents signed in the
-    <span id="ft-span">2009-10 through 2015-16</span> signing periods, built from MLB's public transaction
-    log rather than from published signing lists. <a href="#" id="ft-methods">Full methods and limits</a>.</p></div>
+  <div><h4>What this is</h4><p>A census of international amateur free agents signed in the
+    <span id="ft-span">2009-10 through 2025</span> signing periods, built from MLB's public transaction
+    log rather than from published signing lists. Every rate on this page is a share of the signings
+    that log records. None is an official figure, and none can be: a signing the log never recorded
+    is not in it. <a href="#" id="ft-methods">Full methods and limits</a>.</p></div>
   <div><h4>How a player qualifies</h4><p>Signed with an MLB organization, never appeared in a Rule 4 draft,
     no professional experience in any league before signing, and under 23 at signing. Players born in the
     US, Canada or Puerto Rico are excluded only at 17.5 and above, since draft eligibility follows
@@ -999,11 +1000,8 @@ footer{max-width:1280px;margin:0 auto;padding:0 22px 60px}
   <div><h4>Known limits</h4><p>Signing bonus figures exist for about a fifth of the census and are
     skewed to publicized deals,
     and a partial bonus column would read as zero. Dates of birth are <em>as reported</em>; age
-    falsification is documented in this market. Roughly one signing in ten never appears in the
-    transaction log at all.</p></div>
-  <div><h4>Get the data</h4><p>The full census is a single CSV, one row per player, with
-    column definitions in the schema. <a href="data/census/census_with_outcomes.csv">Download it here</a>, or read the
-    pipeline that builds it on <a href="https://github.com/elliot-wolf/mlb-international-signings">GitHub</a>.</p></div>
+    falsification is documented in this market. Some signings have no record of their own and reach
+    the census only through a later assignment.</p></div>
   <div><h4>Provenance</h4><p>Rows marked <span class="inf">&#9671;</span> had no signing transaction logged; the
     period is inferred from the player's first rookie-league assignment and age is measured at the period
     open. Everything else is an observed signing record.</p></div>
@@ -1825,6 +1823,11 @@ function applyClimbStage(root, active){
 const LADDERS={
   intl:{ladder:SY.ladder, climb:SY.climb, entryAge:SY.sign_age_mat,
         verb:'sign', unit:'signed amateurs', reach:'reach the majors',
+        // A rate from this census is a share of the signings MLB's transaction
+        // log records, not of every signing, and the figure has to say so where
+        // the number is read. The draft ladder has no such line: its
+        // denominator is the draft itself, which is complete.
+        source:'as recorded in MLB\u2019s transaction log',
         entryWord:'signing'},
   draft:{ladder:SY.draft_ladder, climb:SY.draft_climb, entryAge:SY.draft_age_at_entry,
          verb:'are drafted', unit:'signed draftees', reach:'reach the majors',
@@ -1960,7 +1963,9 @@ function sceneFunnel(active, C){
      '" y="'+(ny+40).toFixed(1)+'">'+n.pct+'</text></g>'+
      '<g class="fn" fill-opacity="'+((active>0)?'1':'0')+'">'+
      '<text class="fn-l1"  x="'+(nx+16).toFixed(1)+'" y="'+(ny+64).toFixed(1)+'">'+
-     funnelCap(C,cur)+'</text></g>';
+     funnelCap(C,cur)+'</text>'+
+     (C.source ? '<text class="fn-l2" x="'+(nx+16).toFixed(1)+'" y="'+(ny+79).toFixed(1)+'">'+
+       C.source+'</text>' : '')+'</g>';
   // The draft ladder is drawn identically to the international one; the only
   // place the two routes in are worth separating is the age timeline, where
   // a high schooler and a college senior are three years apart at entry.
@@ -2388,7 +2393,9 @@ function wireYearHover(root){
 function sceneYear(){
   const P=SY.per_year, M=SY.per_year_meta;
   if(!P||!P.length) return '';
-  const w=760,h=400,pad={l:52,r:26,t:26};
+  // h leaves the note its own band: at 400 the first note line sat 8px into the
+  // year tick row (ticks y360-373, note y365-379), across every period.
+  const w=760,h=412,pad={l:52,r:26,t:26};
   const iw=w-pad.l-pad.r;
   const yrs=[]; for(let y=P[0].period;y<=P[P.length-1].period;y++) yrs.push(y);
   const bw=iw/yrs.length, cx=y=>pad.l+bw*(yrs.indexOf(y)+0.5);
@@ -2413,7 +2420,8 @@ function sceneYear(){
   });
   o+='<line class="ax" x1="'+pad.l+'" y1="'+(topY+topH)+'" x2="'+(pad.l+iw)+'" y2="'+(topY+topH)+'"/>';
   // ---- panel 2: what share of them arrived ----
-  o+='<text class="fn-l2" x="'+pad.l+'" y="'+(botY-16)+'">Share reaching the majors</text>'+
+  o+='<text class="fn-l2" x="'+pad.l+'" y="'+(botY-16)+'">Share reaching the majors, '+
+     'of signings in MLB\u2019s transaction log</text>'+
      '<line class="ax" x1="'+pad.l+'" y1="'+botY+'" x2="'+pad.l+'" y2="'+(botY+botH)+'"/>';
   for(let t=0;t<=rMax;t+=4){
     o+='<line class="yr-grid" x1="'+pad.l+'" y1="'+sy(t).toFixed(1)+'" x2="'+(pad.l+iw)+
@@ -3254,13 +3262,16 @@ function countUp(el){
 // this page is typed by hand, so it cannot drift from the census the way the
 // Overview lede did.
 const ME=D.methods;
-(function(){const el=$('#dl-n'); if(el) el.textContent=D.n.toLocaleString();})();
 // The lede and footer state the census's size and span. They are filled from the
 // build rather than typed, because typed ones went stale: the lede read "3,904"
 // and "2011" for three census revisions after both had changed.
 (function(){
   const P=ME.periods, lo=P[0], hi=P[P.length-1];
-  const span=lo+'-'+String(lo+1).slice(2)+' through '+hi+'-'+String(hi+1).slice(2);
+  // MLB's names for the windows, not lo-(lo+1): the last period is "2025", and
+  // the naive form printed "2025-26", a window that has not happened.
+  const ML=(D.mkt&&D.mkt.periods)||[];
+  const span=ML.length ? ML[0].label+' through '+ML[ML.length-1].label
+                       : lo+'-'+String(lo+1).slice(2)+' through '+hi+'-'+String(hi+1).slice(2);
   const set=(id,v)=>{const el=$('#'+id); if(el) el.textContent=v;};
   set('ov-y0',lo); set('ov-y1',hi+1); set('ov-n',ME.n.toLocaleString());
   set('ov-span',span); set('ft-span',span);
@@ -4430,13 +4441,6 @@ function drawMethods(){
      'all. <b>Not safe:</b> any MLB rate, WAR, or success measure cut by bonus band.</p></div>'+
      '</div>';
 
-  o+='<div class="block"><h2>Get the data</h2><p class="prose">PLACEHOLDER. The full census is '+
-     'a single CSV, one row per player, with column definitions in the schema. '+
-     '<a href="data/census/census_with_outcomes.csv">'+
-     'Download it here</a>, or read the pipeline that builds it on '+
-     '<a href="https://github.com/elliot-wolf/mlb-international-signings">GitHub</a>.</p>'+
-     '<p class="prose">If you are going to compute anything from the bonus column, read the '+
-     'warning above first.</p></div>';
 
   $('#me-body').innerHTML=o;
 }
