@@ -1083,7 +1083,10 @@ const PUBLIC = !!D.public;
 // it is being built.
 // The new CBA tab and the old market-trends tab are both visible while the
 // new one is designed, so the old one stays available for reference.
-const V1_TABS = ['t-story', 't-cba', 't-stars', 't-mkt'];
+// 't-stars' (Hometowns, the top 25 by career WAR at their birthplaces) came off
+// the public page on 2026-09-14 at Elliot's call. It is still built and still
+// shows in the local build; restoring it is adding it back here.
+const V1_TABS = ['t-story', 't-cba', 't-mkt'];
 if(PUBLIC){
   // Hide by removing the nav BUTTON and leaving the panel in the DOM. Deleting
   // a panel removed controls that page setup wires at load (#f-c, #f-p, #f-t),
