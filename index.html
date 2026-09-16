@@ -424,6 +424,7 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .cba-svg .cba-med{stroke:var(--news-stamp);stroke-width:1.5}
 .cba-svg .cba-trail{stroke:var(--news-ink);stroke-width:1.5;opacity:.55}
 .cba-svg .cba-tdot{fill:var(--news-ink);opacity:.3}
+.cba-svg text.cba-sub.cba-in{fill:var(--news-paper)}
 .cba-svg .cba-fit{stroke:var(--news-stamp);stroke-width:2.2;fill:none;stroke-linecap:round}
 .cba-svg .cba-runline{stroke:var(--news-ink);stroke-width:1.2;fill:none;opacity:.4}
 .cba-svg text.cba-fitl{font-family:"Archivo",system-ui,sans-serif;font-size:10.5px;font-weight:600;
@@ -5065,7 +5066,8 @@ function cbaBars(cfg){
          '</title></path>'+
          '<text x="'+cx(i).toFixed(1)+'" y="'+(y(v)-5).toFixed(1)+'" text-anchor="middle">'+
          (cfg.pct?v.toFixed(0)+'%':v)+'</text>'+
-         (cfg.sub ? '<text class="cba-sub" x="'+cx(i).toFixed(1)+'" y="'+
+         // inside a filled bar the count takes the paper colour, or it is ink on ink
+         (cfg.sub ? '<text class="cba-sub'+(hollow?'':' cba-in')+'" x="'+cx(i).toFixed(1)+'" y="'+
            (y(v)+13).toFixed(1)+'" text-anchor="middle">'+cfg.sub(d)+'</text>' : '')+
          '<text x="'+cx(i).toFixed(1)+'" y="'+(top+plot+14)+'" text-anchor="middle">'+
          cbaTick(d)+'</text>';
@@ -5318,7 +5320,117 @@ function cbaAgeNotes(){
     ' in '+pk.label+', '+pc(fl.share_teen)+' in '+fl.label+'.');
   return out;
 }
-const CBA_NOTES = {younger:cbaAgeNotes};
+// Shared helpers for the notes below.
+const cbaPct = v => Math.round(100*v) + '%';
+const cbaList = xs => xs.map(v=>v.toLocaleString()).join(', ');
+function cbaVolumeNotes(){
+  const P=D.mkt.periods, C=D.cba, N=C.calendar_note, out=[];
+  if(!P.length) return out;
+  const pk=P.reduce((a,b)=>b.n>a.n?b:a), low=P.filter(d=>d.p>pk.p).reduce((a,b)=>b.n<a.n?b:a, {n:Infinity});
+  const hardFirst=Math.min(...C.eras.filter(e=>e.cap==='hard' && e.first!=null).map(e=>e.first));
+  out.push('Signings peak at '+pk.n.toLocaleString()+' in '+pk.label+
+    (pk.p===hardFirst ? ', the first hard-cap period' : '')+
+    (low.label ? ', fall to '+low.n.toLocaleString()+' in '+low.label+', then run '+
+      cbaList(P.filter(d=>d.p>low.p).map(d=>d.n))+'.' : '.'));
+  out.push('Per period, by agreement: '+C.eras.filter(e=>e.n).map(e=>
+    e.era.replace('-','–')+' '+Math.round(e.per_period).toLocaleString()).join(', ')+'.');
+  const thin=P.filter(d=>d.logged<.98);
+  if(thin.length) out.push('Hollow bars ('+thin.map(d=>d.label).join(', ')+') have an incomplete '+
+    'transaction log, '+thin.map(d=>cbaPct(d.logged)).join(', ')+' of signings logged, so those '+
+    'counts run low. Compare periods within an agreement rather than across the early ones.');
+  if(N && low.p===N.last) out.push('The low point, '+low.label+', is the first January window: it opened '+
+    cbaDate(N.did_open)+', '+N.shift_days+' days late, in the pandemic. Worth checking how much of the '+
+    'dip that explains before calling it a market change.');
+  const cl=(C.clubs||[]).slice().sort((a,b)=>a.season-b.season);
+  if(cl.length>1){
+    let cut=null;
+    for(let i=1;i<cl.length;i++){ const dd=cl[i-1].domestic-cl[i].domestic;
+      if(!cut || dd>cut.d) cut={d:dd, a:cl[i-1], b:cl[i]}; }
+    const f=cl[0], l=cl[cl.length-1];
+    out.push('United States affiliated clubs: '+f.domestic+' in '+f.season+'; the cut takes them from '+
+      cut.a.domestic+' in '+cut.a.season+' to '+cut.b.domestic+' in '+cut.b.season+'; '+l.domestic+
+      ' in '+l.season+'. Dominican and '+
+      'Venezuelan summer-league clubs went the other way: '+f.latin+' in '+f.season+', '+l.latin+
+      ' in '+l.season+'. The cut is MLB’s minor-league restructuring, not the agreement; needs sourcing.');
+  }
+  return out;
+}
+function cbaCubaNotes(){
+  const C=D.cba.cuba, E=D.cba.eras, P=D.mkt.periods, out=[];
+  if(!C) return out;
+  const was=E.filter(e=>e.first!=null && e.first<C.split).pop(), now=E.find(e=>e.first===C.split);
+  if(was && now) out.push('The one parameter: the foreign-professional bar went from '+was.fp_age+
+    ' and '+was.fp_seasons+' seasons to '+now.fp_age+' and '+now.fp_seasons+' in '+C.split+
+    '. Both quotations are in the box below.');
+  const pre=P.filter(d=>d.p<C.split), post=P.filter(d=>d.p>=C.split);
+  out.push('Cuban signings: '+C.pre.n+' in the '+pre.length+' periods before '+C.split+', '+
+    C.post.n+' in the '+post.length+' from '+C.split+' on. By period after: '+
+    cbaList(post.map(d=>d.n_cu))+'.');
+  out.push('Median age '+C.pre.med_age.toFixed(1)+' before, '+C.post.med_age.toFixed(1)+
+    ' after, against '+C.ref.med.toFixed(1)+' for '+C.ref.label+'. Signed at 21 or older: '+
+    cbaPct(C.pre.share_21)+' before, '+cbaPct(C.post.share_21)+' after.');
+  out.push('Had already played professionally: '+C.pre.prior_pro+' of '+C.pre.n+' ('+
+    cbaPct(C.pre.prior_pro/C.pre.n)+') before, '+C.post.prior_pro+' of '+C.post.n+' ('+
+    cbaPct(C.post.prior_pro/C.post.n)+') after. For '+C.ref.label+' it is '+
+    (100*C.ref.prior_pro).toFixed(2)+'%.');
+  const lastPre=pre[pre.length-1], maxEarlier=Math.max(...pre.slice(0,-1).map(d=>d.n_cu));
+  if(lastPre && lastPre.n_cu>maxEarlier) out.push(lastPre.label+' already had '+lastPre.n_cu+
+    ' Cuban signings, more than any earlier period, before the new bar applied. Worth checking why.');
+  return out;
+}
+function cbaMexicoNotes(){
+  const P=D.mkt.periods, out=[];
+  const ev=(D.mkt.events||[]).find(e=>/Mexican League/.test(e.label));
+  const pct=d=>(100*d.n_mx/d.n).toFixed(1)+'%';
+  const f=P[0], l=P[P.length-1];
+  out.push('Mexican-born signings: '+f.n_mx+' in '+f.label+' ('+pct(f)+' of all), '+l.n_mx+' in '+
+    l.label+' ('+pct(l)+'). By period: '+cbaList(P.map(d=>d.n_mx))+'.');
+  if(ev){
+    const before=P.filter(d=>d.p<ev.p), at=P.find(d=>d.p===ev.p), after=P.filter(d=>d.p>ev.p);
+    const pk=before.reduce((a,b)=>b.n_mx>a.n_mx?b:a);
+    out.push('The peak before the ban: '+pk.n_mx+' in '+pk.label+'. '+(at?'Then '+at.n_mx+' in '+at.label+
+      ', the period that opened after the ban. ':'')+ev.label+'.');
+    const top=P.reduce((a,b)=>b.n_mx>a.n_mx?b:a);
+    out.push('After it: '+cbaList(after.map(d=>d.n_mx))+'. '+
+      (top===l ? l.label+' is the highest in the census.' : 'The census high is '+top.n_mx+' in '+top.label+'.'));
+  }
+  const N=D.cba.calendar_note, dip=N && P.find(d=>d.p===N.last);
+  if(dip) out.push(dip.label+' ('+dip.n_mx+') is also the pandemic’s first January window, the same '+
+    'caution as the volume beat.');
+  out.push('The ban and the transfer agreement were between MLB and the Mexican League, outside the '+
+    'Basic Agreement; needs sourcing.');
+  return out;
+}
+function cbaVenezNotes(){
+  const P=D.mkt.periods, out=[], f=P[0], l=P[P.length-1];
+  out.push('Venezuela’s share of all signings: '+cbaPct(f.s_vz)+' in '+f.label+', '+cbaPct(l.s_vz)+
+    ' in '+l.label+'. Count: '+f.n_vz+' to '+l.n_vz+'.');
+  let dip=null;
+  for(let i=1;i<P.length;i++){ const dd=P[i-1].s_vz-P[i].s_vz; if(!dip || dd>dip.d) dip={d:dd, a:P[i-1], b:P[i]}; }
+  if(dip && dip.d>0) out.push('The biggest step back: '+cbaPct(dip.a.s_vz)+' in '+dip.a.label+' to '+
+    cbaPct(dip.b.s_vz)+' in '+dip.b.label+' ('+dip.b.n_vz+' signings).');
+  const hiS=P.reduce((a,b)=>b.s_vz>a.s_vz?b:a), hiN=P.reduce((a,b)=>b.n_vz>a.n_vz?b:a);
+  if(hiS!==hiN) out.push('Share and count do not always move together: the share peaks in '+hiS.label+
+    ' ('+cbaPct(hiS.s_vz)+', '+hiS.n_vz+' signings), the count in '+hiN.label+' ('+hiN.n_vz+', '+
+    cbaPct(hiN.s_vz)+'). That is why both are printed.');
+  const vsl=D.story.journey_meta && D.story.journey_meta.vsl_last;
+  if(vsl){ const after=P.filter(d=>d.p>vsl);
+    out.push('The Venezuelan Summer League’s last season was '+vsl+'; the share after it ran '+
+      after.map(d=>cbaPct(d.s_vz)).join(', ')+'.'); }
+  const G=D.growth && D.growth.growth_share, v=G && G.countries && G.countries.Venezuela;
+  if(v && P.length>=2*G.blocks){
+    const e0=P[0].label, e1=P[G.blocks-1].label, l0=P[P.length-G.blocks].label, l1=l.label;
+    out.push('Comparing the first '+G.blocks+' periods ('+e0+' to '+e1+') with the last '+G.blocks+
+      ' ('+l0+' to '+l1+'), signings rose by '+G.added.toLocaleString()+'. Venezuela accounts for '+
+      v.added.toLocaleString()+' of that ('+v.pct+'%), while the '+G.declined.countries+
+      ' countries that shrank lost '+G.declined.players+' between them.');
+  }
+  out.push('The agreement names Venezuela only in an aside (box below). The economic collapse and clubs '+
+    'closing academies there are outside the data; needs sourcing.');
+  return out;
+}
+const CBA_NOTES = {younger:cbaAgeNotes, volume:cbaVolumeNotes, cuba:cbaCubaNotes,
+                   mexico:cbaMexicoNotes, venezuela:cbaVenezNotes};
 function cbaNotesHTML(items){
   return '<div class="bt-notes"><span class="ql">PLACEHOLDER · points to cover</span><ul>'+
     items.map(x=>'<li>'+x+'</li>').join('')+'</ul></div>';
