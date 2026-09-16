@@ -424,6 +424,18 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .cba-svg .cba-med{stroke:var(--news-stamp);stroke-width:1.5}
 .cba-svg .cba-trail{stroke:var(--news-ink);stroke-width:1.5;opacity:.55}
 .cba-svg .cba-tdot{fill:var(--news-ink);opacity:.3}
+.cba-svg .cba-fit{stroke:var(--news-stamp);stroke-width:2.2;fill:none;stroke-linecap:round}
+.cba-svg .cba-runline{stroke:var(--news-ink);stroke-width:1.2;fill:none;opacity:.4}
+.cba-svg text.cba-fitl{font-family:"Archivo",system-ui,sans-serif;font-size:10.5px;font-weight:600;
+  fill:var(--news-stamp)}
+.cba-svg .cba-ruler{fill:var(--news-paper);stroke:var(--news-ink);stroke-width:1}
+.cba-svg .cba-rtick{stroke:var(--news-ink);stroke-width:1}
+.cba-svg .cba-rtrail{stroke:var(--news-ink-2);stroke-width:1.5;opacity:0;transition:opacity .3s ease}
+.cba-svg .cba-rtrail.on{opacity:.6}
+.cba-svg .cba-rline{stroke:var(--news-stamp);stroke-width:1.5}
+.cba-svg .cba-rptr{fill:var(--news-stamp)}
+.cba-svg text.big.cba-rv{fill:var(--news-stamp)}
+.cba-svg circle.cba-tdot{transition:r .2s ease}
 .cba-svg .cba-tdot.on{fill:var(--news-stamp);opacity:1}
 @media (prefers-reduced-motion:reduce){.cba-svg .cba-area,.cba-svg .cba-cshape{transition:none}}
 @media (max-width:820px){.cba-read{flex-basis:100%;text-align:left}}
@@ -5151,10 +5163,122 @@ function cbaVenez(){
     note:'Share of all signings, with the count beneath it'});
 }
 
-const CBA_FIG = {younger:cbaAges, volume:cbaVolume, cuba:cbaCuba,
+/* ---------- beat 1, second version: the median as a line, and a ruler ----------
+   Elliot's pick (2026-09-16) over the sliding density, which had too many
+   moving parts. One line of the period medians, with a fitted trend for each
+   run of windows -- falling across the July windows, flat across the January
+   ones -- and beside it a vertical ruler on the same age scale. Its marker
+   slides to the period being played and reads the median in years and in
+   months past a 16th birthday, leaving a faint tick at every period it has
+   visited. The line and the ruler share one y scale, so the marker sits level
+   with its dot. cbaAges and cbaWireAges, the density version, stay in the file. */
+function cbaAgeLine(){
+  const C=D.cba, F=C.frames||[], A=C.age_fit||{}, N=C.calendar_note;
+  if(!F.length) return '';
+  const W=CBAW, top=42, ph=250, H=top+ph+62;
+  const padL=46, chartR=498, rx=580, rw=14;
+  const meds=F.map(f=>f.med);
+  const lo=Math.floor((Math.min(...meds)-0.2)*2)/2, hi=Math.ceil((Math.max(...meds)+0.2)*2)/2;
+  const y=v=>top+ph-ph*(v-lo)/(hi-lo);
+  const slot=(chartR-padL)/F.length, cx=i=>padL+slot*(i+.5);
+  let s='<svg class="cba-svg cba-aline" viewBox="0 0 '+W+' '+H+'" data-lo="'+lo+'" data-hi="'+hi+
+    '" data-top="'+top+'" data-ph="'+ph+'" role="img" aria-label="Median age at signing in each '+
+    'period, with a fitted trend for the July windows and one for the January windows, beside a '+
+    'ruler on the same age scale">';
+  let bi=0;
+  C.eras.forEach(e=>{
+    const idx=F.map((f,i)=>f.era===e.era?i:-1).filter(i=>i>=0); if(!idx.length) return;
+    const x0=padL+slot*idx[0], x1=padL+slot*(idx[idx.length-1]+1);
+    s+='<rect class="band'+(bi%2?' alt':'')+'" x="'+x0.toFixed(1)+'" y="'+(top-12)+'" width="'+
+       (x1-x0).toFixed(1)+'" height="'+(ph+12)+'"/>'+
+       '<text class="evt-l" x="'+((x0+x1)/2).toFixed(1)+'" y="'+(top-18)+'" text-anchor="middle" '+
+       'style="fill:var(--news-ink-2)">'+e.era.replace('-','–')+'</text>';
+    bi++;
+  });
+  for(let v=lo; v<=hi+1e-9; v+=0.5){
+    s+='<line class="grid" x1="'+padL+'" y1="'+y(v).toFixed(1)+'" x2="'+chartR+'" y2="'+y(v).toFixed(1)+'"/>'+
+       '<text x="'+(padL-6)+'" y="'+(y(v)+3.5).toFixed(1)+'" text-anchor="end">'+v.toFixed(1)+'</text>';
+  }
+  if(18>lo && 18<hi)
+    s+='<text class="cba-sub" x="'+(padL+4)+'" y="'+(y(18)-4).toFixed(1)+'">18th birthday</text>';
+  const gi=N ? F.findIndex(f=>f.p===N.last) : -1;
+  if(gi>0){
+    const gx=padL+slot*gi;
+    s+='<line class="evt out" x1="'+gx.toFixed(1)+'" y1="'+(top-4)+'" x2="'+gx.toFixed(1)+'" y2="'+(top+ph)+'"/>'+
+       '<text class="evt-l" x="'+(gx-4).toFixed(1)+'" y="'+(top+ph+30)+'" text-anchor="end">'+
+       'window moves to January</text>';
+  }
+  // one run per calendar: the connecting line, then the fitted trend through
+  // the run's own mean, which is where a least-squares line passes
+  [['july','July windows'],['jan','January windows']].forEach(([k,name])=>{
+    const r=A[k]; if(!r) return;
+    const idx=F.map((f,i)=>(f.p>=r.first && f.p<=r.last)?i:-1).filter(i=>i>=0);
+    if(idx.length<2) return;
+    const mx=idx.reduce((a,i)=>a+F[i].p,0)/idx.length, my=idx.reduce((a,i)=>a+F[i].med,0)/idx.length;
+    const yf=p=>my+r.slope*(p-mx), i0=idx[0], i1=idx[idx.length-1];
+    s+='<polyline class="cba-runline" points="'+idx.map(i=>cx(i).toFixed(1)+','+y(F[i].med).toFixed(1)).join(' ')+'"/>'+
+       '<path class="cba-fit" d="M'+cx(i0).toFixed(1)+','+y(yf(F[i0].p)).toFixed(1)+'L'+
+       cx(i1).toFixed(1)+','+y(yf(F[i1].p)).toFixed(1)+'"/>';
+    const flat = r.ci[0]<=0 && r.ci[1]>=0;
+    const mid=(cx(i0)+cx(i1))/2, ym=y((yf(F[i0].p)+yf(F[i1].p))/2);
+    const below = k==='july';
+    s+='<text class="cba-fitl" x="'+mid.toFixed(1)+'" y="'+(below?ym+34:ym-30).toFixed(1)+'" text-anchor="middle">'+
+       name+'</text>'+
+       '<text class="cba-fitl" x="'+mid.toFixed(1)+'" y="'+(below?ym+47:ym-17).toFixed(1)+'" text-anchor="middle">'+
+       (flat ? 'no measurable trend' : 'down '+cbaRate(r.slope).replace(/^about /,'about '))+'</text>';
+    [i0,i1].forEach((i,j)=>{
+      s+='<text class="cba-sub" x="'+cx(i).toFixed(1)+'" y="'+(y(F[i].med)+(below&&j===1?16:-9)).toFixed(1)+
+         '" text-anchor="middle">'+F[i].med.toFixed(1)+'</text>';
+    });
+  });
+  F.forEach((f,i)=>{
+    s+='<circle class="cba-tdot" data-i="'+i+'" cx="'+cx(i).toFixed(1)+'" cy="'+y(f.med).toFixed(1)+'" r="3.5">'+
+       '<title>'+f.label+': median '+f.med.toFixed(2)+', '+f.n.toLocaleString()+' signings</title></circle>'+
+       '<text x="'+cx(i).toFixed(1)+'" y="'+(top+ph+14)+'" text-anchor="middle">'+cbaTick(f)+'</text>';
+  });
+  s+='<line class="ax" x1="'+padL+'" y1="'+(top+ph)+'" x2="'+chartR+'" y2="'+(top+ph)+'"/>'+
+     '<text x="'+padL+'" y="'+(top+ph+48)+'">Median age at signing, by signing period · there is no 2020 period</text>';
+  // the ruler
+  s+='<text class="lab" x="'+(rx+rw/2)+'" y="'+(top-18)+'" text-anchor="middle">The median signee</text>'+
+     '<rect class="cba-ruler" x="'+rx+'" y="'+top+'" width="'+rw+'" height="'+ph+'"/>';
+  for(let m=Math.ceil(lo*12); m<=Math.floor(hi*12); m++){
+    const yy=y(m/12), len = m%12===0 ? rw : (m%6===0 ? rw*.65 : rw*.35);
+    s+='<line class="cba-rtick" x1="'+rx+'" y1="'+yy.toFixed(1)+'" x2="'+(rx+len).toFixed(1)+'" y2="'+yy.toFixed(1)+'"/>';
+    if(m%12===0) s+='<text x="'+(rx-6)+'" y="'+(yy+3.5).toFixed(1)+'" text-anchor="end">'+(m/12)+'</text>';
+  }
+  F.forEach((f,i)=>{
+    s+='<line class="cba-rtrail" data-i="'+i+'" x1="'+(rx-7)+'" y1="'+y(f.med).toFixed(1)+'" x2="'+rx+
+       '" y2="'+y(f.med).toFixed(1)+'"/>';
+  });
+  const m0=Math.round((F[0].med-16)*12);
+  s+='<g class="cba-rmark" transform="translate(0,'+y(F[0].med).toFixed(1)+')">'+
+     '<line class="cba-rline" x1="'+(rx-4)+'" y1="0" x2="'+(rx+rw+4)+'" y2="0"/>'+
+     '<path class="cba-rptr" d="M'+(rx+rw+4)+',0l9,-6v12z"/>'+
+     '<text class="big cba-rv" x="'+(rx+rw+17)+'" y="6">'+F[0].med.toFixed(1)+'</text>'+
+     '<text class="cba-sub cba-rm" x="'+(rx+rw+17)+'" y="20">'+m0+' months past 16</text></g>';
+  return s+'</svg>'+cbaPlayerHTML(F.map(f=>({label:f.label, tick:String(f.p).slice(2)})), 'aline');
+}
+function cbaWireAgeLine(root){
+  const svg=root.querySelector('svg.cba-aline'); if(!svg) return null;
+  const F=D.cba.frames, lo=+svg.dataset.lo, hi=+svg.dataset.hi, top=+svg.dataset.top, ph=+svg.dataset.ph;
+  const y=v=>top+ph-ph*(v-lo)/(hi-lo);
+  const mark=svg.querySelector('.cba-rmark'), rv=svg.querySelector('.cba-rv'), rm=svg.querySelector('.cba-rm');
+  const dots=[...svg.querySelectorAll('.cba-tdot')], trail=[...svg.querySelectorAll('.cba-rtrail')];
+  const frames=F.map((f,i)=>Object.assign({i}, f));
+  return cbaWirePlayer(root, 'aline', frames, f=>[f.med], (v, f)=>{
+    const med=v[0];
+    mark.setAttribute('transform', 'translate(0,'+y(med).toFixed(1)+')');
+    rv.textContent=med.toFixed(1);
+    rm.textContent=Math.round((med-16)*12)+' months past 16';
+    dots.forEach((d,j)=>{ const on=j===f.i; d.classList.toggle('on', on); d.setAttribute('r', on?'6':'3.5'); });
+    trail.forEach((t,j)=>t.classList.toggle('on', j<=f.i));
+  }, f=>'<b>'+f.label+'</b> · '+f.n.toLocaleString()+' signings · median '+f.med.toFixed(1)+
+        ' · '+Math.round(100*f.share_teen)+'% signed before 18');
+}
+const CBA_FIG = {younger:cbaAgeLine, volume:cbaVolume, cuba:cbaCuba,
                  mexico:cbaMexico, venezuela:cbaVenez};
 // Figures that need more than their own markup once they are in the page.
-const CBA_WIRE = {younger:cbaWireAges, cuba:cbaWireCuba};
+const CBA_WIRE = {younger:cbaWireAgeLine, cuba:cbaWireCuba};
 // Beats whose right-hand column is a list of points for Elliot to write from,
 // instead of drafted prose. Every point is read off the payload.
 function cbaDate(iso){
