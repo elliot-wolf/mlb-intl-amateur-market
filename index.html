@@ -366,6 +366,12 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
   font-family:"Archivo",system-ui,sans-serif;font-size:9.5px;font-weight:700;
   text-transform:uppercase;letter-spacing:.14em;padding:4px 8px;transform:rotate(-1.6deg);
   margin-bottom:11px}
+.bt-notes{border-top:2px solid var(--news-ink);padding:9px 0 2px;margin-bottom:14px}
+.bt-notes .ql{font-family:"Archivo",system-ui,sans-serif;font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.18em;color:var(--news-stamp);display:block;margin-bottom:7px}
+.bt-notes ul{margin:0;padding-left:1.1em}
+.bt-notes li{font-family:"Source Serif 4",Georgia,serif;font-size:14px;line-height:1.5;
+  color:var(--news-ink-2);margin:0 0 8px}
 .news-foot{border-top:3px double var(--news-ink);margin-top:26px;padding-top:12px;
   font-family:"Source Serif 4",Georgia,serif;font-size:13px;color:var(--news-ink-2)}
 /* chart furniture inside the paper: the SVGs inherit the newspaper palette
@@ -4859,8 +4865,10 @@ function cbaAges(){
        F[0].med.toFixed(1)+' in '+F[0].label+' to '+F[F.length-1].med.toFixed(1)+
        ' in '+F[F.length-1].label+'</text>';
   s += '</svg>';
-  return s + cbaPlayerHTML(F.map(f=>({label:f.label, tick:String(f.p).slice(2)})), 'ages')
-           + cbaCalNote();
+  // No caption under the figure (Elliot's call, 2026-09-16): the calendar and
+  // slope explanations are now points in the beat's notes. cbaCalNote and
+  // cbaFitNote stay in the file.
+  return s + cbaPlayerHTML(F.map(f=>({label:f.label, tick:String(f.p).slice(2)})), 'ages');
 }
 
 /* Why the last period goes the wrong way. Two things push the same direction
@@ -5147,6 +5155,50 @@ const CBA_FIG = {younger:cbaAges, volume:cbaVolume, cuba:cbaCuba,
                  mexico:cbaMexico, venezuela:cbaVenez};
 // Figures that need more than their own markup once they are in the page.
 const CBA_WIRE = {younger:cbaWireAges, cuba:cbaWireCuba};
+// Beats whose right-hand column is a list of points for Elliot to write from,
+// instead of drafted prose. Every point is read off the payload.
+function cbaDate(iso){
+  const d=new Date(iso+'T00:00:00');
+  return d.getDate()+' '+['January','February','March','April','May','June','July','August',
+    'September','October','November','December'][d.getMonth()]+' '+d.getFullYear();
+}
+function cbaAgeNotes(){
+  const C=D.cba, F=C.frames||[], A=C.age_fit, N=C.calendar_note, out=[];
+  if(!F.length) return out;
+  const lab=p=>{ const f=F.find(x=>x.p===p); return f?f.label:String(p); };
+  const ci=r=>r.ci[0].toFixed(2)+' to '+r.ci[1].toFixed(2);
+  if(A&&A.july) out.push('The '+A.july.n+' July windows, '+lab(A.july.first)+' to '+lab(A.july.last)+
+    ': the median falls from '+A.july.from.toFixed(1)+' to '+A.july.to.toFixed(1)+', '+
+    cbaRate(A.july.slope)+' (slope '+A.july.slope.toFixed(3)+' years a year, 95% interval '+ci(A.july)+').');
+  if(A&&A.jan) out.push('The '+A.jan.n+' January windows, '+lab(A.jan.first)+' to '+lab(A.jan.last)+
+    ': '+F.filter(f=>f.p>=A.jan.first).map(f=>f.med.toFixed(1)).join(', ')+
+    '. No measurable trend (95% interval '+ci(A.jan)+'); five periods show it has not kept the '+
+    'old pace, not that the trend itself changed.');
+  const pools=Math.min(...C.eras.filter(e=>e.first!=null).map(e=>e.first));
+  let steep=null;
+  for(let i=1;i<F.length;i++){
+    if(N && F[i].p===N.last) continue;
+    const dd=F[i-1].med-F[i].med;
+    if(!steep || dd>steep.d) steep={d:dd, a:F[i-1], b:F[i]};
+  }
+  if(steep) out.push('It does not step down at the '+pools+' pools or the later hard cap. The '+
+    'steepest single fall, '+steep.a.med.toFixed(1)+' to '+steep.b.med.toFixed(1)+', is '+
+    steep.a.label+' to '+steep.b.label+
+    (steep.b.p<pools ? ', before any agreement had international provisions.' : '.'));
+  if(N) out.push('The '+N.last_label+' rise ('+N.med_prev.toFixed(1)+' to '+N.med_last.toFixed(1)+
+    ') is the calendar: that window opened '+cbaDate(N.did_open)+' instead of '+
+    cbaDate(N.would_open)+', '+N.shift_days+' days later. There is no '+N.gap+' period.');
+  const pk=F.reduce((a,f)=>f.share_teen>a.share_teen?f:a), f0=F[0], fl=F[F.length-1];
+  const pc=v=>Math.round(100*v)+'%';
+  out.push('Signed before 18: '+pc(f0.share_teen)+' in '+f0.label+', a high of '+pc(pk.share_teen)+
+    ' in '+pk.label+', '+pc(fl.share_teen)+' in '+fl.label+'.');
+  return out;
+}
+const CBA_NOTES = {younger:cbaAgeNotes};
+function cbaNotesHTML(items){
+  return '<div class="bt-notes"><span class="ql">PLACEHOLDER · points to cover</span><ul>'+
+    items.map(x=>'<li>'+x+'</li>').join('')+'</ul></div>';
+}
 const CBA_STAMP = {outside:'Outside the agreement · needs sourcing',
                    artifact:'An artifact of the calendar, not the market'};
 
@@ -5164,7 +5216,9 @@ function cbaBeats(){
       '<h2 class="bt-head">'+b.head+'</h2>'+
       '<p class="bt-dek">'+b.dek+'</p>'+
       '<div class="bt-body"><div class="bt-fig">'+fig+'</div>'+
-      '<div class="bt-col">'+stamp+'<p class="bt-p">'+b.draft+'</p>'+quotes+'</div></div>'+
+      '<div class="bt-col">'+stamp+
+        (CBA_NOTES[b.id] ? cbaNotesHTML(CBA_NOTES[b.id]()) : '<p class="bt-p">'+b.draft+'</p>')+
+        quotes+'</div></div>'+
       '</article>';
   }).join('');
   const foot = document.querySelector('#cba-foot');
