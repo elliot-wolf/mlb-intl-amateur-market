@@ -126,6 +126,17 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .sc-svg text.fn-lab{font-family:inherit;font-size:12px;fill:var(--muted)}
 .sc-svg text.fn-pct{font-size:17px;fill:var(--muted);font-variant-numeric:tabular-nums}
 .sc-svg text.fn-l1{font-family:inherit;font-size:12.5px;fill:var(--ink-2)}
+/* the magnified MLB bar: dashed box on the source, recessive leader lines, the
+   passed share in the ladder's highlight and the rest of the bar paled */
+.sc-svg .fn-zoom rect.fz-src{fill:none;stroke:var(--ink-2);stroke-width:1;stroke-dasharray:3 2}
+.sc-svg .fn-zoom line.fz-c{stroke:var(--muted);stroke-width:1;stroke-opacity:.7}
+.sc-svg .fn-zoom path.fz-in{fill:var(--chart-h)}
+.sc-svg .fn-zoom path.fz-out{fill:var(--chart-h);fill-opacity:.28}
+.sc-svg .fn-zoom text.fz-v,.sc-svg .fn-zoom text.fz-vo{font-size:13px;font-weight:700;
+  font-variant-numeric:tabular-nums;fill:var(--surface)}
+.sc-svg .fn-zoom text.fz-vo{fill:var(--ink-2)}
+.sc-svg .fn-zoom text.fz-l{font-family:inherit;font-size:12px;fill:var(--ink-2)}
+.sc-svg .fn-zoom tspan.fz-m{fill:var(--muted)}
 .sc-jrny line.jr-track{stroke:var(--line-2);stroke-width:2;stroke-linecap:round}
 .sc-jrny line.jr-fill{stroke:var(--chart-p);stroke-width:3;stroke-linecap:round;
   transition:stroke-dashoffset 1.6s cubic-bezier(.33,.02,.34,1)}
@@ -1796,11 +1807,10 @@ render();
 // within it; the stage swaps only what changed, so scrolling between two dot
 // steps animates rather than redrawing.
 const SY=D.story;
-// The journey ladder runs one rung past the majors: players who went on to pass
-// MLB's rookie playing-time limits. Kept apart from SY.ladder, which other
-// figures read as ending at MLB.
-const SY_IL = SY.ladder.concat(SY.rookie_limits && SY.rookie_limits.n != null
-  ? [{label:SY.rookie_limits.label, n:SY.rookie_limits.n, rookie:true}] : []);
+// The journey ladder ends at MLB. Rookie limits used to be a ninth rung; they
+// are a magnified view of the MLB bar now (funnelZoom), because they are a
+// share of the major leaguers rather than another level to climb to.
+const SY_IL = SY.ladder;
 const money=v=>'$'+Math.round(Number(v)).toLocaleString();
 const STEPS=[
   {scene:'funnel', cohort:'intl', headInChart:true, noHead:true,
@@ -1809,8 +1819,8 @@ const STEPS=[
     // No longer drawn -- the placeholder line is gone -- but paintStage still
     // feeds this to the figure's aria-label, so it states the rung rather than
     // leaving screen readers an empty string. Derived from the data, not copy.
-    label:d.label+': '+(100*d.n/SY_IL[0].n).toFixed(0)+'% of signings '+
-      (d.rookie ? 'passed MLB’s rookie playing-time limits' : 'reached this level'),
+    label:d.label+': '+(100*d.n/SY_IL[0].n).toFixed(0)+'% of signings reached this level'+
+      (i===SY_IL.length-1 && funnelZoomData() ? '; '+funnelZoomData().aria : ''),
     foot:jrnyFoot()
   })).concat([{
     // One scroll past the last rung. The ladder holds where it is, still
@@ -2695,6 +2705,8 @@ const LADDERS={
         // denominator is the draft itself, which is complete.
         source:'as recorded in MLB\u2019s transaction log',
         note:'log',        // footnote marker after the source line
+        // the MLB bar opens into a magnified view of the rookie-limit split
+        inset:true,
         entryWord:'signing'},
   draft:{ladder:SY.draft_ladder, climb:SY.draft_climb, entryAge:SY.draft_age_at_entry,
          verb:'are drafted', unit:'signed draftees', reach:'reach the majors',
@@ -2707,7 +2719,9 @@ const LADDERS={
 // one plain note first, then the footnotes, numbered in reading order and keyed
 // to the superscripts in the figure through jrNote. The caption is HTML, which
 // paintStage writes with innerHTML.
-function jrNote(k){ return {rookie:1, log:2, vsl:3}[k]; }
+// The rookie note moved from a ladder label to the inset under the running
+// figure, so it now reads after the transaction-log note, not before it.
+function jrNote(k){ return {log:1, rookie:2, vsl:3}[k]; }
 // The rookie rung's definition, from the payload. The rule's third test,
 // days on an active roster, is not in this data and the note says so.
 function jrRookieNote(){
@@ -2721,10 +2735,10 @@ function jrRookieNote(){
 function jrnyFoot(){
   return '<ul class="jr-notes">'+
     '<li>Describe what years the data comes from, and how the cutoff was chosen</li>'+
-    (SY.rookie_limits ? '<li class="fn"><sup>'+jrNote('rookie')+'</sup>'+jrRookieNote()+'</li>' : '')+
     '<li class="fn"><sup>'+jrNote('log')+'</sup>MLBPA documents this at 6%, find link '+
       'to website and attach here to compare. Also estimate the % of signings that we '+
       'are missing</li>'+
+    (SY.rookie_limits ? '<li class="fn"><sup>'+jrNote('rookie')+'</sup>'+jrRookieNote()+'</li>' : '')+
     '<li class="fn"><sup>'+jrNote('vsl')+'</sup>Find date Venezuelan summer league '+
       'stopped.</li></ul>';
 }
@@ -2772,8 +2786,7 @@ function funnelNote(C){
 // signed amateurs reach Signed" says nothing.
 function funnelReach(C, i){
   const L=C.ladder;
-  if(L[i].rookie) return 'passed MLB’s rookie limits';
-  if(i===L.length-1 || (L[i+1] && L[i+1].rookie)) return C.reach;
+  if(i===L.length-1) return C.reach;
   // Strip any parenthetical gloss a rung label carries: the axis is where a
   // definition belongs, the sentence has no room for one, and the footnote
   // does that job. The draft ladder labels its lowest rung "Rookie" rather
@@ -2807,14 +2820,29 @@ function sceneFunnel(active, C){
   // bars in the rows it sits beside actually require. VLW_ is the value label
   // that follows each bar; the block has to clear that, not just the bar.
   const NW_=216, NH_=76, VLW_=46, GAP_=12, MONO34_=20.4;  // 0.6em advance at 34px
-  let ny=plotH-8-NH_, h=plotH;
+  // With the rookie-limit inset the bottom right belongs to the magnified MLB
+  // bar, which sits level with the bar it magnifies. The block moves up to sit
+  // on top of it, so the running figure reads first and the inset under it.
+  // The inset clears the value labels of the two lowest rungs, the only ones
+  // it sits beside, and the frame grows just enough for the line under it.
+  let Z=null;
+  const Zd = C.inset ? funnelZoomData() : null;
+  if(Zd){
+    const m=L.length-1, ym=pad.t+slot*m+(slot-bh)/2, bw=Math.max(iw*L[m].n/total,2);
+    // taller than the bar it magnifies, so the two lines open into a cone
+    const hb=Math.round(bh*1.75), yb=ym+bh/2-hb/2;
+    Z={sx:pad.l, sy:ym, sw:bw, sh:bh, yb:yb, hb:hb, d:Zd,
+       x0:pad.l+Math.max(iw*L[m-1].n/total, bw)+VLW_+GAP_, x1:pad.l+iw};
+  }
+  let ny = Z ? Z.yb-12-NH_-6 : plotH-8-NH_,
+      h  = Z ? Math.max(plotH, Math.ceil(Z.yb+Z.hb+24)) : plotH;
   const r0=Math.max(0, Math.floor((ny-pad.t)/slot));
   let wmax=0;
   for(let j=r0;j<L.length;j++) wmax=Math.max(wmax, iw*L[j].n/total);
   const clear=pad.l+wmax+VLW_+GAP_;          // earliest x that clears the bars
   const flush=pad.l+iw-NW_-16;               // x that puts the block at the edge
   let nx=Math.max(clear, flush);
-  if((pad.l+iw)-nx < NW_){ h=plotH+NH_+12; ny=plotH+4; nx=pad.l; }
+  if(!Z && (pad.l+iw)-nx < NW_){ h=plotH+NH_+12; ny=plotH+4; nx=pad.l; }
   // The draft comparison runs through this same function and is a different
   // figure with its own heading, so the title is gated to the international
   // ladder rather than printed on both.
@@ -2826,8 +2854,7 @@ function sceneFunnel(active, C){
     const now=i===cur;
     const stop=(i<L.length-1)?d.n-L[i+1].n:0;
     o+='<text data-lvl="'+i+'" x="'+(pad.l-10)+'" y="'+(y+bh/2+4).toFixed(1)+
-       '" text-anchor="end" class="vlab"'+(now?' style="fill:var(--ink)"':'')+'>'+d.label+
-       (d.rookie ? '<tspan class="fn-sup" dy="-5">'+jrNote('rookie')+'</tspan>' : '')+'</text>'+
+       '" text-anchor="end" class="vlab"'+(now?' style="fill:var(--ink)"':'')+'>'+d.label+'</text>'+
        '<path data-lvl="'+i+'" class="mk" opacity="'+(now?'1':'.85')+'" d="'+
        barPath(pad.l,+y.toFixed(1),+bw.toFixed(1),+bh.toFixed(1),4)+'" fill="'+
        (now?'var(--chart-h)':'var(--line-2)')+'"><title>'+d.label+': '+d.n.toLocaleString()+
@@ -2870,10 +2897,107 @@ function sceneFunnel(active, C){
      (C.source ? '<text class="fn-l2" x="'+(nx+16).toFixed(1)+'" y="'+(ny+79).toFixed(1)+'">'+
        C.source+(C.note ? '<tspan class="fn-sup" dy="-5">'+jrNote(C.note)+'</tspan>' : '')+
        '</text>' : '')+'</g>';
+  if(Z) o+=funnelZoomSVG(Z, cur===L.length-1);
   // The draft ladder is drawn identically to the international one; the only
   // place the two routes in are worth separating is the age timeline, where
   // a high schooler and a college senior are three years apart at entry.
   return o+'</svg>'+(C.splitClimb?sceneRouteClimb(active,true):sceneJourney(lit));
+}
+// The rookie-limit split of the MLB bar, from the payload. Returns nothing
+// unless the split is of the same major leaguers the bar counts, so the inset
+// can never magnify a bar into numbers that are not in it.
+function funnelZoomData(){
+  const R=SY.rookie_limits, L=SY.ladder;
+  if(!R || R.n==null || !L || L.length<2) return null;
+  const mlb=L[L.length-1].n, total=L[0].n;
+  if(R.mlb!==mlb){ console.warn('rookie limits cover '+R.mlb+' major leaguers, the ladder '+mlb); return null; }
+  const out=mlb-R.n-(R.unknown||0), pc=v=>(100*v).toFixed(0)+'%';
+  return {n:R.n, mlb:mlb, out:out, total:total, p:R.n/mlb,
+          pIn:pc(R.n/mlb), pOut:pc(out/mlb), pAll:pc(R.n/total),
+          aria:R.n+' of the '+mlb+' who reached MLB ('+pc(R.n/mlb)+') passed MLB’s rookie '+
+               'playing-time limits, '+pc(R.n/total)+' of all signings'};
+}
+// The MLB bar, magnified. A dashed box marks the bar, two lines run from it to
+// the inset, and the inset is the same bar at full width split into the major
+// leaguers who passed the rookie limits and those who did not. Drawn in its
+// finished state when `on`, otherwise collapsed onto the MLB bar and hidden,
+// which is where funnelZoom starts the move from. The geometry rides on the
+// group so the animation reads it back rather than recomputing the layout.
+function funnelZoomSVG(Z, on){
+  const d=Z.d, W=Z.x1-Z.x0, win=W*d.p, f=v=>v.toFixed(1);
+  const srcR=Z.sx+Z.sw+3, srcT=Z.sy-3, srcB=Z.sy+Z.sh+3;
+  const cy=Z.yb+Z.hb/2+4.5, ly=Z.yb+Z.hb+16;
+  const bar = on ? barPath(+f(Z.x0),+f(Z.yb),+f(win),Z.hb,0)
+                 : barPath(Z.sx,+f(Z.sy),+f(Z.sw),Z.sh,4);
+  return '<g class="fn-zoom" data-on="'+(on?1:0)+'" opacity="'+(on?1:0)+'" data-z="'+
+      [Z.sx,Z.sy,Z.sw,Z.sh,Z.x0,Z.x1,Z.yb,Z.hb,d.p].map(v=>+v.toFixed(3)).join(',')+'">'+
+    '<rect class="fz-src" opacity="'+(on?1:0)+'" x="'+f(Z.sx-3)+'" y="'+f(srcT)+'" width="'+
+      f(Z.sw+6)+'" height="'+f(Z.sh+6)+'" rx="3"/>'+
+    '<line class="fz-c" data-e="t" x1="'+f(srcR)+'" y1="'+f(srcT)+'" x2="'+f(on?Z.x0:srcR)+
+      '" y2="'+f(on?Z.yb:srcT)+'"/>'+
+    '<line class="fz-c" data-e="b" x1="'+f(srcR)+'" y1="'+f(srcB)+'" x2="'+f(on?Z.x0:srcR)+
+      '" y2="'+f(on?Z.yb+Z.hb:srcB)+'"/>'+
+    '<path class="fz-out" opacity="'+(on?1:0)+'" d="'+
+      barPath(+f(Z.x0+win+2),+f(Z.yb),+f(W-win-2),Z.hb,4)+'"><title>Reached MLB without passing '+
+      'the rookie limits: '+d.out.toLocaleString()+' of '+d.mlb.toLocaleString()+' ('+d.pOut+')</title></path>'+
+    '<path class="fz-in" d="'+bar+'"><title>Passed MLB’s rookie limits: '+d.n.toLocaleString()+
+      ' of the '+d.mlb.toLocaleString()+' who reached MLB ('+d.pIn+'), '+d.pAll+' of all '+
+      d.total.toLocaleString()+' signed</title></path>'+
+    '<g class="fz-lab" opacity="'+(on?1:0)+'">'+
+      '<text class="fz-v" x="'+f(Z.x0+10)+'" y="'+f(cy)+'">'+d.n.toLocaleString()+' · '+d.pIn+'</text>'+
+      '<text class="fz-vo" x="'+f(Z.x1-10)+'" y="'+f(cy)+'" text-anchor="end">'+
+        d.out.toLocaleString()+' · '+d.pOut+'</text>'+
+      '<text class="fz-l" x="'+f(Z.x0)+'" y="'+f(ly)+'">passed MLB’s rookie limits'+
+        '<tspan class="fn-sup" dy="-5">'+jrNote('rookie')+'</tspan>'+
+        '<tspan class="fz-m" dy="5"> · '+d.pAll+' of all signings</tspan></text>'+
+      '<text class="fz-l" x="'+f(Z.x1)+'" y="'+f(ly)+'" text-anchor="end">did not</text>'+
+    '</g></g>';
+}
+// Opens or closes the inset. Opening: the dashed box marks the MLB bar, a copy
+// of the bar flies out to full width with the two lines stretching behind it,
+// then the passed share holds while the rest of the bar pales, and the labels
+// land last. Closing just fades it, and resets it onto the MLB bar for the
+// next time. A hidden page or reduced motion gets the end state at once.
+function funnelZoom(root, on){
+  const g=root.querySelector('g.fn-zoom'); if(!g) return;
+  if((g.dataset.on==='1')===on) return;
+  g.dataset.on=on?'1':'0';
+  const z=g.dataset.z.split(',').map(Number);
+  const sx=z[0],sy=z[1],sw=z[2],sh=z[3],x0=z[4],x1=z[5],yb=z[6],hb=z[7],p=z[8];
+  const W=x1-x0, win=W*p, srcR=sx+sw+3, srcT=sy-3, srcB=sy+sh+3;
+  const G=d3.select(g), bar=G.select('path.fz-in'), out=G.select('path.fz-out'),
+        lab=G.select('g.fz-lab'), src=G.select('rect.fz-src'),
+        ct=G.select('line.fz-c[data-e="t"]'), cb=G.select('line.fz-c[data-e="b"]');
+  G.interrupt(); G.selectAll('*').interrupt();
+  const collapse=()=>{
+    src.attr('opacity',0); out.attr('opacity',0); lab.attr('opacity',0);
+    ct.attr('x2',srcR).attr('y2',srcT); cb.attr('x2',srcR).attr('y2',srcB);
+    bar.attr('d',barPath(sx,sy,sw,sh,4));
+  };
+  const snap = REDUCE || document.hidden;
+  if(!on){
+    if(snap){ G.attr('opacity',0); collapse(); return; }
+    G.transition().duration(220).attr('opacity',0).on('end',collapse);
+    return;
+  }
+  if(snap){
+    G.attr('opacity',1); src.attr('opacity',1); out.attr('opacity',1); lab.attr('opacity',1);
+    ct.attr('x2',x0).attr('y2',yb); cb.attr('x2',x0).attr('y2',yb+hb);
+    bar.attr('d',barPath(x0,yb,win,hb,0));
+    return;
+  }
+  collapse(); G.attr('opacity',1);
+  const L=(a,b,t)=>a+(b-a)*t, E=d3.easeCubicInOut, T0=450, FLY=750;
+  src.transition().delay(300).duration(250).attr('opacity',1);
+  ct.transition().delay(T0).duration(FLY).ease(E).attr('x2',x0).attr('y2',yb);
+  cb.transition().delay(T0).duration(FLY).ease(E).attr('x2',x0).attr('y2',yb+hb);
+  bar.transition().delay(T0).duration(FLY).ease(E)
+      .attrTween('d',()=>t=>barPath(L(sx,x0,t),L(sy,yb,t),L(sw,W,t),L(sh,hb,t),4))
+    .transition().delay(80).duration(650).ease(E)
+      .attrTween('d',()=>t=>barPath(x0,yb,L(W,win,t),hb,4*(1-t)));
+  // the pale remainder sits under the full bar until the bar gives way to it
+  out.transition().delay(T0+FLY).duration(0).attr('opacity',1);
+  lab.transition().delay(T0+FLY+80+520).duration(380).attr('opacity',1);
 }
 // A stage change only repaints: same bars, same widths, same labels. The eye
 // keeps its place and CSS tweens the colour.
@@ -2888,6 +3012,8 @@ function applyFunnelStage(root, active, C){
   // scoped through g.fn: sceneClimb uses fn-l1 too, further down the block
   const cap=root.querySelector('g.fn text.fn-l1');
   if(cap) cap.textContent=funnelCap(C, cur);
+  // open on the MLB rung and stay open through the timeline stage after it
+  funnelZoom(root, cur===L.length-1);
   applyJourneyStage(root, lit);
 
   root.querySelectorAll('[data-lvl]').forEach(el=>{
