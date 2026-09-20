@@ -98,6 +98,9 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
   color:var(--ink-2);margin:0 0 18px;max-width:68ch}
 .sb-fig{background:var(--surface);border:1px solid var(--line);border-radius:12px;
   padding:18px 20px 14px}
+/* the notes card that follows a pinned figure on a phone (renderBlocks) */
+.sb-foot-out{margin-top:14px;padding-top:12px}
+.sb-foot-out .stage-foot{margin-top:0}
 .sb-head{display:flex;align-items:baseline;gap:14px;margin-bottom:12px}
 .sb-head.gone{display:none}
 .stage-count{font-family:"IBM Plex Mono",monospace;font-size:44px;font-weight:500;
@@ -218,8 +221,16 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .jr-notes li{margin:0 0 3px}
 .jr-notes li.fn{list-style:none}
 .jr-notes li.fn sup{display:inline-block;width:1.2em;margin-left:-1.2em;font-size:.8em;line-height:0}
-.sc-jrny text.jr-cnt{font-size:10px;fill:var(--muted);font-variant-numeric:tabular-nums}
+.sc-jrny text.jr-cnt,.sc-jrny tspan.jr-cnt{font-size:10px;font-weight:400;fill:var(--muted);
+  font-variant-numeric:tabular-nums}
+.sc-jrny tspan.jr-cnt{font-family:"IBM Plex Mono",monospace}
 .sc-svg text.fn-l2{font-family:inherit;font-size:11.5px;fill:var(--muted)}
+/* the narrowest phones: a size down so no rung's sentence is clipped */
+/* a short phone: the running figure's own furniture comes down a size too */
+.sc-svg.fn-short text.fn-count{font-size:26px}
+.sc-svg.fn-short text.fn-l1{font-size:11.5px}
+.sc-svg.fn-tight text.fn-l1{font-size:11px}
+.sc-svg.fn-tight text.fn-l2{font-size:10.5px}
 .sc-svg .lg text{fill:var(--ink-2);font-size:10.5px}
 .sc-svg line.ax{stroke:var(--line);stroke-width:1}
 .sc-svg path.mk:hover{filter:brightness(1.08)}
@@ -229,6 +240,11 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 /* A staged block pins its figure and swaps the words around it, so two beats
    share one chart instead of drawing it twice. */
 .sb-stick{position:sticky;top:80px}
+/* phone: the pinned figure carries one chart at a time (sceneFunnel) */
+.fn-pane.off{display:none}
+.fn-pane.in{animation:fnpane .32s ease both}
+@keyframes fnpane{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.fn-pane.in{animation:none}}
 .sb-track{pointer-events:none}
 /* ---------- Market Trends: the broadsheet ----------
    A period pastiche, kept to three moves so it reads as a newspaper rather
@@ -565,8 +581,15 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .gr-mix text.gr-mixl{font-size:10.5px;font-weight:600;fill:var(--ink-2)}
 .gr-svg line.gr-ld{stroke:var(--ink-2);stroke-width:0.9;opacity:0.55}
 .gr-svg text.gr-c{font-size:10.5px;font-weight:600;fill:var(--ink-2);paint-order:stroke;stroke:var(--surface);stroke-width:3}
+/* phone: the map prints at 1/K, so its labels are set K times larger (sceneGrowth) */
+.gr-svg.gr-k text.gr-c{font-size:calc(10.5px*var(--gk));stroke-width:calc(3px*var(--gk))}
+.gr-svg.gr-k text.gr-n{font-size:calc(11px*var(--gk));stroke-width:calc(3px*var(--gk))}
+.gr-svg.gr-k text.gr-tot{font-size:calc(12px*var(--gk))}
+.gr-svg.gr-k line.gr-ld{stroke-width:calc(.9px*var(--gk))}
 .sc-svg path.yr-bar{fill:var(--line-2)}
 .sc-svg text.yr-n{font-size:9px;fill:var(--muted);font-variant-numeric:tabular-nums}
+.sc-svg text.yr-n.yr-nv{font-size:10px}
+.sc-svg text.yr-none.yr-nb{font-size:10px}
 .sc-svg line.yr-grid{stroke:var(--line);stroke-width:1}
 .sc-svg line.yr-base{stroke:var(--chart-h);stroke-width:1.5;stroke-dasharray:4 3}
 .sc-svg text.yr-basel{font-size:10.5px;fill:var(--accent-ink);font-weight:600}
@@ -628,6 +651,23 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
   .sb-stick h3{font-size:19px;margin-bottom:5px}
   .sb-stick .sb-cap{font-size:15px;margin-bottom:11px}
   .sb-stick .stage-count{font-size:34px}
+}
+/* Last, so it wins over the short-screen offsets above: a phone's header is the
+   masthead, the count line and the tabs stacked, and it is sticky, so a figure
+   pinned at their offsets slides under it and loses its title. --hdr is that
+   header's measured height (syncHdr). */
+/* A short phone spends what is left on the figure itself, so its heading and
+   the card around it come down with the charts (storyShort). */
+@media (max-width:560px) and (max-height:700px){
+  .sb-stick .sb-fig{padding:10px 13px 8px}
+  .sb-stick .fig-h-lg{font-size:17px;margin-bottom:3px}
+  .sb-stick .fig-rule{margin-bottom:8px}
+}
+@media (max-width:560px){
+  .sb-stick{top:calc(var(--hdr,118px) + 8px)}
+  /* Market trends pins its own figures and carries its own offset, which slides
+     under the same header. Its charts still draw at their wide sizes. */
+  #mkt-blocks .sb-stick{top:calc(var(--hdr,118px) + 8px)}
 }
 /* Scroll-driven reveal. The .anim class is added by script only when motion is
    wanted, so the default rendering -- no JS, reduced motion, a print -- is the
@@ -1635,7 +1675,7 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   });
   if(t.id==='t-map') drawMap();
   if(t.id==='t-ov') drawOverview();
-  if(t.id==='t-story') drawStory();
+  if(t.id==='t-story'){ drawStory(); storyFit(); }
   if(t.id==='t-mkt') drawMkt();
   if(t.id==='t-cba') drawCba();
   if(t.id==='t-stars') drawStars();
@@ -2038,6 +2078,44 @@ const STEPS=[
      'understated rather than overstated.'}
 ];
 let storyDrawn=false;
+// ---- Phone layout ----
+// Every story chart is drawn in viewBox units and scaled to its column. The
+// desktop frames are 760 wide, so on a phone's 300px column they print at 0.4
+// and 11px text lands at 4.4px. Below NARROW_PX of column each chart draws a
+// layout of its own instead, in a frame exactly as wide as the column, so a
+// unit is a CSS pixel and text prints at the size it is set in. SW is that
+// width, or 0 for the desktop layouts. It is measured rather than guessed: the
+// story draws, reads the width its figures actually got, and redraws if that
+// calls for the other layout or a different width.
+const NARROW_PX=560;
+let SW=0;
+// SH is the height a pinned figure has under the sticky header. A 320x568
+// handset, or any phone whose browser chrome eats the screen, leaves under 400
+// of it -- less than the standard phone figure needs, which cut the rookie-limit
+// inset off at the fold with no way to scroll to it, because scrolling advances
+// the stage instead. Under SHORT_PX the charts draw a compact tier. Only the
+// tier is acted on, never the raw height: a phone changes its height every time
+// the address bar slides, and redrawing on that would thrash.
+const SHORT_PX=560;
+let SH=0;
+function storyShort(){ return SW>0 && SH>0 && SH<SHORT_PX; }
+function storyH(){
+  const h=document.querySelector('header');
+  return Math.max(0, window.innerHeight-(h?h.getBoundingClientRect().height:0)-8);
+}
+// The header is sticky and its height changes with the column, so the pinned
+// figures are offset by what it actually measures rather than by a guess.
+function syncHdr(){
+  const h=document.querySelector('header');
+  if(h) document.documentElement.style.setProperty('--hdr',
+    Math.round(h.getBoundingClientRect().height)+'px');
+}
+function storyColW(){
+  const f=document.querySelector('#sc-blocks .sb-fig');
+  if(!f || !f.clientWidth) return 0;          // not drawn, or its tab is hidden
+  const cs=getComputedStyle(f);
+  return f.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
+}
 
 // The funnel as an emphasis chart. Two blocks use it -- the cohort and the
 // major-league end of it -- so every level stays at full strength in both and
@@ -2528,9 +2606,82 @@ function jrLabel(l){
   return l.slice(0,i+3)+'<tspan class="fn-sup" dy="-5">'+jrNote('vsl')+'</tspan>'+
     '<tspan dy="5">'+l.slice(i+3)+'</tspan>';
 }
+// A stop's hover text, shared by the two layouts.
+function jrTitle(d,i,M){
+  return d.label+': median age '+d.age.toFixed(1)+
+    ', '+d.n.toLocaleString()+' of '+M.cohort.toLocaleString()+' ('+(100*d.share).toFixed(0)+'%)'+
+    // The count is everyone who cleared the stop. On the one stop that can
+    // be skipped, say in the same breath how many actually stood on it --
+    // hovering is where a reader asks.
+    (d.here!=null&&d.here<d.n ? ' \u00b7 '+d.here.toLocaleString()+
+      ' of them played at this level; the other '+(d.n-d.here).toLocaleString()+
+      (i===1 ? ' went straight to the United States' : ' skipped it'):'')+
+    (d.lag?' \u00b7 '+d.lag.toFixed(1)+' years after signing':'')+
+    ' \u00b7 hitters '+d.Hitters.age.toFixed(1)+', pitchers '+
+    d.Pitchers.age.toFixed(1)+
+    (i===1&&M.dsl_share ? ' \u00b7 '+(100*M.dsl_share).toFixed(0)+
+      '% of these seasons are in the Dominican Summer League, the rest in the '+
+      'Venezuelan Summer League, which last ran in '+M.vsl_last : '')+
+    (i===2&&M.us_rookie_share ? ' \u00b7 '+(100*M.us_rookie_share).toFixed(0)+
+      '% arrive at Rookie level, in the Arizona and Florida complexes and, '+
+      'in the earlier years, the Appalachian and Pioneer Leagues; the rest '+
+      'arrive at short-season A or walk straight into a full-season league'
+      : '');
+}
+// SVG text does not wrap. Greedy word wrap on an estimated advance -- adv is
+// the average character width at the text's size, set a little wide so a line
+// errs short rather than running off the frame.
+function svgWrap(str, maxW, adv){
+  const out=[]; let cur='';
+  str.split(' ').forEach(wd=>{
+    const t=cur ? cur+' '+wd : wd;
+    if(cur && t.length*adv>maxW){ out.push(cur); cur=wd; } else cur=t;
+  });
+  if(cur) out.push(cur);
+  return out;
+}
+// The phone timeline. Eight stops across a 300px column leave 37px a stop,
+// which no level name fits, so the line turns vertical: ages down the left,
+// the track, then each level and its share. Same classes as the wide one, so
+// applyJourneyStage lights it the same way and the wipe runs top to bottom.
+function sceneJourneyV(lit){
+  const J=SY.journey, M=SY.journey_meta, w=SW;
+  const SHORT=storyShort();
+  const TX=52, Y0=SHORT?38:46, RS=SHORT?24:30, NX=TX+15;
+  const yi=i=>Y0+RS*i, y1=yi(J.length-1), run=y1-Y0, DUR=1600;
+  let o='<svg class="sc-svg sc-jrny" viewBox="0 0 '+w+' ';
+  let b='<text class="jr-sub" x="0" y="17">Median Age at Each Level</text>'+
+    '<line class="jr-track" x1="'+TX+'" y1="'+Y0+'" x2="'+TX+'" y2="'+y1+'"/>'+
+    '<line class="jr-fill" x1="'+TX+'" y1="'+Y0+'" x2="'+TX+'" y2="'+y1+
+    '" data-len="'+run+'" stroke-dasharray="'+run+'" stroke-dashoffset="'+(lit?0:run)+'"/>';
+  J.forEach((d,i)=>{
+    const y=yi(i), last=i===J.length-1, del=Math.round(DUR*(y-Y0)/(run||1));
+    b+='<circle class="jr-base" cx="'+TX+'" cy="'+y+'" r="'+(last?7:6)+'"/>'+
+       '<g class="jr-stop'+(lit?' on':'')+'" style="transition-delay:'+del+'ms">'+
+       '<circle class="mk jr-dot'+(last?' on':'')+'" cx="'+TX+'" cy="'+y+'" r="'+(last?7:6)+
+       '"><title>'+jrTitle(d,i,M)+'</title></circle>'+
+       '<text class="jr-age'+(last?' on':'')+'" x="'+(TX-14)+'" y="'+(y+5)+
+       '" text-anchor="end">'+d.age.toFixed(1)+'</text>'+
+       '<text class="jr-name" x="'+NX+'" y="'+(y+4)+'">'+jrLabel(d.label)+
+       '<tspan class="jr-cnt" dx="6">'+(100*d.share).toFixed(0)+'%</tspan></text></g>';
+  });
+  // The sentence under the line, wrapped to the column. "6 years" is held
+  // together so the emphasis never breaks across two lines.
+  const end=J[J.length-1], yrs=end.lag.toFixed(0)+'\u00a0years';
+  const lines=svgWrap('It takes an international amateur approximately '+yrs+
+    ' from signing to reach the majors.', w-4, 6.9);
+  const sy=y1+(SHORT?28:36);
+  const LH=SHORT?16:18;
+  b+='<g class="jr-br'+(lit?' on':'')+'">'+lines.map((l,k)=>
+    '<text class="jr-brt" x="0" y="'+(sy+k*LH)+'">'+
+      l.replace(yrs, '<tspan class="jr-brn">'+yrs+'</tspan>')+'</text>').join('')+'</g>';
+  return o+Math.ceil(sy+(lines.length-1)*LH+10)+
+    '" preserveAspectRatio="xMidYMid meet">'+b+'</svg>';
+}
 function sceneJourney(lit){
   const J=SY.journey, M=SY.journey_meta;
   if(!J||J.length<2) return '';
+  if(SW) return sceneJourneyV(lit);
   const w=760,TOP=0,h=246+TOP,L=44,R=44,iw=w-L-R,ty=118+TOP;
   // Stops are spaced evenly, one per level, rather than placed by age. With
   // every level on the line, age cannot order them: the median player at
@@ -2575,26 +2726,7 @@ function sceneJourney(lit){
     o+='<circle class="jr-base" cx="'+x.toFixed(1)+'" cy="'+ty+'" r="'+(last?7:6)+'"/>'+
        '<g class="jr-stop'+(lit?' on':'')+'" style="transition-delay:'+del+'ms">'+
        '<circle class="mk jr-dot'+(last?' on':'')+'" cx="'+x.toFixed(1)+'" cy="'+ty+
-       '" r="'+(last?7:6)+'"><title>'+d.label+': median age '+d.age.toFixed(1)+
-       ', '+d.n.toLocaleString()+' of '+M.cohort.toLocaleString()+' ('+pctS+')'+
-       // The count is everyone who cleared the stop. On the one stop that can
-       // be skipped, say in the same breath how many actually stood on it --
-       // hovering is where a reader asks.
-       (d.here!=null&&d.here<d.n ? ' \u00b7 '+d.here.toLocaleString()+
-         ' of them played at this level; the other '+(d.n-d.here).toLocaleString()+
-         (i===1 ? ' went straight to the United States' : ' skipped it'):'')+
-       (d.lag?' \u00b7 '+d.lag.toFixed(1)+' years after signing':'')+
-       ' \u00b7 hitters '+d.Hitters.age.toFixed(1)+', pitchers '+
-       d.Pitchers.age.toFixed(1)+
-       (i===1&&M.dsl_share ? ' \u00b7 '+(100*M.dsl_share).toFixed(0)+
-         '% of these seasons are in the Dominican Summer League, the rest in the '+
-         'Venezuelan Summer League, which last ran in '+M.vsl_last : '')+
-       (i===2&&M.us_rookie_share ? ' \u00b7 '+(100*M.us_rookie_share).toFixed(0)+
-         '% arrive at Rookie level, in the Arizona and Florida complexes and, '+
-         'in the earlier years, the Appalachian and Pioneer Leagues; the rest '+
-         'arrive at short-season A or walk straight into a full-season league'
-         : '')+
-       '</title></circle>'+
+       '" r="'+(last?7:6)+'"><title>'+jrTitle(d,i,M)+'</title></circle>'+
        '<line class="jr-stem" x1="'+x.toFixed(1)+'" y1="'+(up?ty-8:ty+8)+
        '" x2="'+cx.toFixed(1)+'" y2="'+(up?ys.age+6:ys.age-16)+'"/>'+
        '<text class="jr-age'+(last?' on':'')+'" x="'+cx.toFixed(1)+'" y="'+ys.age+
@@ -2801,15 +2933,25 @@ function sceneFunnel(active, C){
   // `active` can run one past the last rung now: that stage belongs to the
   // timeline below, and the ladder simply holds its final state.
   const cur=Math.min(active, L.length-1), lit=active>L.length-1;
-  const w=760,plotH=270;
+  // N is the phone layout (see SW): the frame is the column's own width, the
+  // running figure heads the chart because its sentence cannot fit beside the
+  // bars, and the rungs take a fixed height instead of sharing out 270.
+  const N=SW>0, w=N?SW:760, SHORT=N&&storyShort();
+  // The running figure's block is shorter on a short phone, and so is its
+  // 34px figure (fn-short); the offsets below are the block's own furniture.
+  const NW_=216, NH_=SHORT?58:76, VLW_=46, GAP_=12, MONO34_=20.4;  // 0.6em advance at 34px
+  const CY_=SHORT?30:40, L1_=SHORT?46:64, L2_=SHORT?58:79;
   // 'US Rookie ball' does not fit the 96 the short rung names needed. 6.6 is
   // the 11px mono advance, and the 20 is the gutter that keeps the longest
   // label off the frame edge if the webfont fails and a slightly wider
   // fallback mono is substituted.
-  const _lw=Math.max.apply(null,L.map(d=>d.label.length))*6.6+20;
-  const pad={l:Math.max(96,Math.ceil(_lw)),t:12,r:84,b:12};
-  const iw=w-pad.l-pad.r, ih=plotH-pad.t-pad.b;
-  const slot=ih/L.length, bh=Math.min(24, slot-6);
+  const _lw=Math.max.apply(null,L.map(d=>d.label.length))*6.6+(N?12:20);
+  const pad={l:Math.max(N?60:96,Math.ceil(_lw)),t:N?NH_+(SHORT?12:18):12,r:N?38:84,b:N?8:12};
+  const iw=w-pad.l-pad.r;
+  // 24 a rung and a tight inset keep the pinned figure inside the shortest
+  // phone screen: a 320x667 handset spends 171px on its header alone.
+  const slot=N?(SHORT?20:24):(270-24)/L.length, ih=slot*L.length, plotH=pad.t+ih+pad.b;
+  const bh=Math.min(24, slot-6);
   // Where the running figure can go depends on the shape of the bars, which
   // differs between the two ladders: the international one collapses below
   // Single-A and leaves its right half open, while the draft stays wide to the
@@ -2819,35 +2961,59 @@ function sceneFunnel(active, C){
   // Push it as far right as the plot allows, then back off only as far as the
   // bars in the rows it sits beside actually require. VLW_ is the value label
   // that follows each bar; the block has to clear that, not just the bar.
-  const NW_=216, NH_=76, VLW_=46, GAP_=12, MONO34_=20.4;  // 0.6em advance at 34px
   // With the rookie-limit inset the bottom right belongs to the magnified MLB
   // bar, which sits level with the bar it magnifies. The block moves up to sit
   // on top of it, so the running figure reads first and the inset under it.
   // The inset clears the value labels of the two lowest rungs, the only ones
   // it sits beside, and the frame grows just enough for the line under it.
+  // On a phone there is no room beside the bars, so the inset runs the full
+  // width under the ladder and the cone opens downward from the MLB bar. Each
+  // leader line is [from x, from y, to x, to y]; funnelZoom only ever reads
+  // them back, so the two layouts share one animation.
   let Z=null;
   const Zd = C.inset ? funnelZoomData() : null;
   if(Zd){
     const m=L.length-1, ym=pad.t+slot*m+(slot-bh)/2, bw=Math.max(iw*L[m].n/total,2);
     // taller than the bar it magnifies, so the two lines open into a cone
-    const hb=Math.round(bh*1.75), yb=ym+bh/2-hb/2;
-    Z={sx:pad.l, sy:ym, sw:bw, sh:bh, yb:yb, hb:hb, d:Zd,
-       x0:pad.l+Math.max(iw*L[m-1].n/total, bw)+VLW_+GAP_, x1:pad.l+iw};
+    const hb=Math.round(bh*(SHORT?1.9:1.75));
+    const sL=pad.l-3, sR=pad.l+bw+3, sT=ym-3, sB=ym+bh+3;
+    if(N){
+      const yb=pad.t+ih+(SHORT?10:14);
+      Z={sx:pad.l, sy:ym, sw:bw, sh:bh, yb:yb, hb:hb, d:Zd, x0:0, x1:w, stack:true,
+         c:[[sL,sB,0,yb],[sR,sB,w,yb]]};
+    } else {
+      const yb=ym+bh/2-hb/2, x0=pad.l+Math.max(iw*L[m-1].n/total, bw)+VLW_+GAP_;
+      Z={sx:pad.l, sy:ym, sw:bw, sh:bh, yb:yb, hb:hb, d:Zd, x0:x0, x1:pad.l+iw,
+         c:[[sR,sT,x0,yb],[sR,sB,x0,yb+hb]]};
+    }
   }
-  let ny = Z ? Z.yb-12-NH_-6 : plotH-8-NH_,
-      h  = Z ? Math.max(plotH, Math.ceil(Z.yb+Z.hb+24)) : plotH;
-  const r0=Math.max(0, Math.floor((ny-pad.t)/slot));
-  let wmax=0;
-  for(let j=r0;j<L.length;j++) wmax=Math.max(wmax, iw*L[j].n/total);
-  const clear=pad.l+wmax+VLW_+GAP_;          // earliest x that clears the bars
-  const flush=pad.l+iw-NW_-16;               // x that puts the block at the edge
-  let nx=Math.max(clear, flush);
-  if(!Z && (pad.l+iw)-nx < NW_){ h=plotH+NH_+12; ny=plotH+4; nx=pad.l; }
+  let ny, nx, h;
+  if(N){
+    ny=SHORT?4:8; nx=0;
+    h = Z ? Math.ceil(Z.yb+Z.hb+(SHORT?36:40)) : plotH;
+  } else {
+    ny = Z ? Z.yb-12-NH_-6 : plotH-8-NH_;
+    h  = Z ? Math.max(plotH, Math.ceil(Z.yb+Z.hb+24)) : plotH;
+    const r0=Math.max(0, Math.floor((ny-pad.t)/slot));
+    let wmax=0;
+    for(let j=r0;j<L.length;j++) wmax=Math.max(wmax, iw*L[j].n/total);
+    const clear=pad.l+wmax+VLW_+GAP_;          // earliest x that clears the bars
+    const flush=pad.l+iw-NW_-16;               // x that puts the block at the edge
+    nx=Math.max(clear, flush);
+    if(!Z && (pad.l+iw)-nx < NW_){ h=plotH+NH_+12; ny=plotH+4; nx=pad.l; }
+  }
   // The draft comparison runs through this same function and is a different
   // figure with its own heading, so the title is gated to the international
   // ladder rather than printed on both.
+  // On the narrowest phones the longest line the running figure can read -- "of
+  // signed amateurs reach US Rookie ball" -- is wider than the column, and an
+  // SVG clips what leaves its frame. Set the whole block a size smaller rather
+  // than let one rung's sentence go missing. 6.2 is the 12.5px Archivo advance.
+  const capW=Math.max.apply(null, L.map((d,i)=>funnelCap(C,i).length))*6.2;
+  const tight = N && capW > w-22;
   let o = C.splitClimb ? '' : funnelHead();
-  o+='<svg class="sc-svg" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="xMidYMid meet">';
+  o+='<svg class="sc-svg'+(tight?' fn-tight':'')+(SHORT?' fn-short':'')+'" viewBox="0 0 '+w+' '+h+
+     '" preserveAspectRatio="xMidYMid meet">';
   o+='<line class="ax" x1="'+pad.l+'" y1="'+pad.t+'" x2="'+pad.l+'" y2="'+(pad.t+ih)+'"/>';
   L.forEach((d,i)=>{
     const y=pad.t+slot*i+(slot-bh)/2, bw=Math.max(iw*d.n/total,2);
@@ -2886,22 +3052,31 @@ function sceneFunnel(active, C){
      // the same height throughout. Its x comes from the LAST rung's figure, the
      // only one it ever appears beside. applyFunnelStage finds no g.fn-top on
      // the international ladder and skips it.
-     '<text class="fn-count" x="'+(nx+16).toFixed(1)+'" y="'+(ny+40).toFixed(1)+'">'+share+'</text>'+
+     '<text class="fn-count" x="'+(nx+16).toFixed(1)+'" y="'+(ny+CY_).toFixed(1)+'">'+share+'</text>'+
      (showRatio ?
      '<g class="fn-top" fill-opacity="'+((active>=L.length-1)?'1':'0')+'">'+
      '<text class="fn-pct" x="'+(nx+16+MONO34_*endShare.length+16).toFixed(1)+
-     '" y="'+(ny+40).toFixed(1)+'">'+n.pct+'</text></g>' : '')+
+     '" y="'+(ny+CY_).toFixed(1)+'">'+n.pct+'</text></g>' : '')+
      '<g class="fn" fill-opacity="'+((active>0)?'1':'0')+'">'+
-     '<text class="fn-l1"  x="'+(nx+16).toFixed(1)+'" y="'+(ny+64).toFixed(1)+'">'+
+     '<text class="fn-l1"  x="'+(nx+16).toFixed(1)+'" y="'+(ny+L1_).toFixed(1)+'">'+
      funnelCap(C,cur)+'</text>'+
-     (C.source ? '<text class="fn-l2" x="'+(nx+16).toFixed(1)+'" y="'+(ny+79).toFixed(1)+'">'+
+     (C.source ? '<text class="fn-l2" x="'+(nx+16).toFixed(1)+'" y="'+(ny+L2_).toFixed(1)+'">'+
        C.source+(C.note ? '<tspan class="fn-sup" dy="-5">'+jrNote(C.note)+'</tspan>' : '')+
        '</text>' : '')+'</g>';
   if(Z) o+=funnelZoomSVG(Z, cur===L.length-1);
   // The draft ladder is drawn identically to the international one; the only
   // place the two routes in are worth separating is the age timeline, where
   // a high schooler and a college senior are three years apart at entry.
-  return o+'</svg>'+(C.splitClimb?sceneRouteClimb(active,true):sceneJourney(lit));
+  o+='</svg>';
+  if(C.splitClimb) return o+sceneRouteClimb(active,true);
+  // A phone cannot hold both charts at once: stacked they are 737px against a
+  // 768px screen, once the heading and the notes are in, so the pinned figure
+  // carries one at a time -- the ladder while the reader is climbing it, the
+  // timeline on the beat that draws it. On a wide screen both are on screen
+  // together, which is how the timeline's shares read against the rungs.
+  if(!N) return o+sceneJourney(lit);
+  return '<div class="fn-pane'+(lit?' off':'')+'" data-pane="lad">'+o+'</div>'+
+         '<div class="fn-pane'+(lit?'':' off')+'" data-pane="jr">'+sceneJourney(lit)+'</div>';
 }
 // The rookie-limit split of the MLB bar, from the payload. Returns nothing
 // unless the split is of the same major leaguers the bar counts, so the inset
@@ -2925,18 +3100,25 @@ function funnelZoomData(){
 // group so the animation reads it back rather than recomputing the layout.
 function funnelZoomSVG(Z, on){
   const d=Z.d, W=Z.x1-Z.x0, win=W*d.p, f=v=>v.toFixed(1);
-  const srcR=Z.sx+Z.sw+3, srcT=Z.sy-3, srcB=Z.sy+Z.sh+3;
   const cy=Z.yb+Z.hb/2+4.5, ly=Z.yb+Z.hb+16;
   const bar = on ? barPath(+f(Z.x0),+f(Z.yb),+f(win),Z.hb,0)
                  : barPath(Z.sx,+f(Z.sy),+f(Z.sw),Z.sh,4);
+  // The count and share go inside each segment when they fit, the share alone
+  // when only that fits, and nothing when neither does; the hover keeps both.
+  // 7.9 is the 13px bold mono advance, and 20 the padding either side.
+  const fit=(seg, opts)=>opts.find(t=>t.length*7.9+20<=seg)||'';
+  const tIn=fit(win, [d.n.toLocaleString()+' · '+d.pIn, d.pIn]);
+  const tOut=fit(W-win-2, [d.out.toLocaleString()+' · '+d.pOut, d.pOut]);
+  const sup='<tspan class="fn-sup" dy="-5">'+jrNote('rookie')+'</tspan>';
+  const line=(c,x,y,anchor,body)=>'<text class="'+c+'" x="'+f(x)+'" y="'+f(y)+'"'+
+    (anchor?' text-anchor="'+anchor+'"':'')+'>'+body+'</text>';
   return '<g class="fn-zoom" data-on="'+(on?1:0)+'" opacity="'+(on?1:0)+'" data-z="'+
       [Z.sx,Z.sy,Z.sw,Z.sh,Z.x0,Z.x1,Z.yb,Z.hb,d.p].map(v=>+v.toFixed(3)).join(',')+'">'+
-    '<rect class="fz-src" opacity="'+(on?1:0)+'" x="'+f(Z.sx-3)+'" y="'+f(srcT)+'" width="'+
+    '<rect class="fz-src" opacity="'+(on?1:0)+'" x="'+f(Z.sx-3)+'" y="'+f(Z.sy-3)+'" width="'+
       f(Z.sw+6)+'" height="'+f(Z.sh+6)+'" rx="3"/>'+
-    '<line class="fz-c" data-e="t" x1="'+f(srcR)+'" y1="'+f(srcT)+'" x2="'+f(on?Z.x0:srcR)+
-      '" y2="'+f(on?Z.yb:srcT)+'"/>'+
-    '<line class="fz-c" data-e="b" x1="'+f(srcR)+'" y1="'+f(srcB)+'" x2="'+f(on?Z.x0:srcR)+
-      '" y2="'+f(on?Z.yb+Z.hb:srcB)+'"/>'+
+    // collapsed, a line ends where it starts; data-b is where it opens to
+    Z.c.map(c=>'<line class="fz-c" x1="'+f(c[0])+'" y1="'+f(c[1])+'" x2="'+f(on?c[2]:c[0])+
+      '" y2="'+f(on?c[3]:c[1])+'" data-b="'+f(c[2])+','+f(c[3])+'"/>').join('')+
     '<path class="fz-out" opacity="'+(on?1:0)+'" d="'+
       barPath(+f(Z.x0+win+2),+f(Z.yb),+f(W-win-2),Z.hb,4)+'"><title>Reached MLB without passing '+
       'the rookie limits: '+d.out.toLocaleString()+' of '+d.mlb.toLocaleString()+' ('+d.pOut+')</title></path>'+
@@ -2944,13 +3126,17 @@ function funnelZoomSVG(Z, on){
       ' of the '+d.mlb.toLocaleString()+' who reached MLB ('+d.pIn+'), '+d.pAll+' of all '+
       d.total.toLocaleString()+' signed</title></path>'+
     '<g class="fz-lab" opacity="'+(on?1:0)+'">'+
-      '<text class="fz-v" x="'+f(Z.x0+10)+'" y="'+f(cy)+'">'+d.n.toLocaleString()+' · '+d.pIn+'</text>'+
-      '<text class="fz-vo" x="'+f(Z.x1-10)+'" y="'+f(cy)+'" text-anchor="end">'+
-        d.out.toLocaleString()+' · '+d.pOut+'</text>'+
-      '<text class="fz-l" x="'+f(Z.x0)+'" y="'+f(ly)+'">passed MLB’s rookie limits'+
-        '<tspan class="fn-sup" dy="-5">'+jrNote('rookie')+'</tspan>'+
-        '<tspan class="fz-m" dy="5"> · '+d.pAll+' of all signings</tspan></text>'+
-      '<text class="fz-l" x="'+f(Z.x1)+'" y="'+f(ly)+'" text-anchor="end">did not</text>'+
+      (tIn ? line('fz-v', Z.x0+10, cy, '', tIn) : '')+
+      (tOut ? line('fz-vo', Z.x1-10, cy, 'end', tOut) : '')+
+      // A narrow frame stacks the share of all signings on a line of its own,
+      // or it runs into "did not" at the other end of the row.
+      (Z.stack
+        ? line('fz-l', Z.x0, ly, '', 'passed MLB’s rookie limits'+sup)+
+          line('fz-l', Z.x1, ly, 'end', 'did not')+
+          line('fz-l', Z.x0, ly+15, '', '<tspan class="fz-m">'+d.pAll+' of all signings</tspan>')
+        : line('fz-l', Z.x0, ly, '', 'passed MLB’s rookie limits'+sup+
+            '<tspan class="fz-m" dy="5"> · '+d.pAll+' of all signings</tspan>')+
+          line('fz-l', Z.x1, ly, 'end', 'did not'))+
     '</g></g>';
 }
 // Opens or closes the inset. Opening: the dashed box marks the MLB bar, a copy
@@ -2964,14 +3150,16 @@ function funnelZoom(root, on){
   g.dataset.on=on?'1':'0';
   const z=g.dataset.z.split(',').map(Number);
   const sx=z[0],sy=z[1],sw=z[2],sh=z[3],x0=z[4],x1=z[5],yb=z[6],hb=z[7],p=z[8];
-  const W=x1-x0, win=W*p, srcR=sx+sw+3, srcT=sy-3, srcB=sy+sh+3;
+  const W=x1-x0, win=W*p;
   const G=d3.select(g), bar=G.select('path.fz-in'), out=G.select('path.fz-out'),
-        lab=G.select('g.fz-lab'), src=G.select('rect.fz-src'),
-        ct=G.select('line.fz-c[data-e="t"]'), cb=G.select('line.fz-c[data-e="b"]');
+        lab=G.select('g.fz-lab'), src=G.select('rect.fz-src'), cs=G.selectAll('line.fz-c');
+  const bx=function(){ return this.dataset.b.split(',')[0]; },
+        by=function(){ return this.dataset.b.split(',')[1]; };
   G.interrupt(); G.selectAll('*').interrupt();
   const collapse=()=>{
     src.attr('opacity',0); out.attr('opacity',0); lab.attr('opacity',0);
-    ct.attr('x2',srcR).attr('y2',srcT); cb.attr('x2',srcR).attr('y2',srcB);
+    cs.attr('x2',function(){ return this.getAttribute('x1'); })
+      .attr('y2',function(){ return this.getAttribute('y1'); });
     bar.attr('d',barPath(sx,sy,sw,sh,4));
   };
   const snap = REDUCE || document.hidden;
@@ -2982,15 +3170,14 @@ function funnelZoom(root, on){
   }
   if(snap){
     G.attr('opacity',1); src.attr('opacity',1); out.attr('opacity',1); lab.attr('opacity',1);
-    ct.attr('x2',x0).attr('y2',yb); cb.attr('x2',x0).attr('y2',yb+hb);
+    cs.attr('x2',bx).attr('y2',by);
     bar.attr('d',barPath(x0,yb,win,hb,0));
     return;
   }
   collapse(); G.attr('opacity',1);
   const L=(a,b,t)=>a+(b-a)*t, E=d3.easeCubicInOut, T0=450, FLY=750;
   src.transition().delay(300).duration(250).attr('opacity',1);
-  ct.transition().delay(T0).duration(FLY).ease(E).attr('x2',x0).attr('y2',yb);
-  cb.transition().delay(T0).duration(FLY).ease(E).attr('x2',x0).attr('y2',yb+hb);
+  cs.transition().delay(T0).duration(FLY).ease(E).attr('x2',bx).attr('y2',by);
   bar.transition().delay(T0).duration(FLY).ease(E)
       .attrTween('d',()=>t=>barPath(L(sx,x0,t),L(sy,yb,t),L(sw,W,t),L(sh,hb,t),4))
     .transition().delay(80).duration(650).ease(E)
@@ -3014,6 +3201,12 @@ function applyFunnelStage(root, active, C){
   if(cap) cap.textContent=funnelCap(C, cur);
   // open on the MLB rung and stay open through the timeline stage after it
   funnelZoom(root, cur===L.length-1);
+  // the phone shows one chart at a time (sceneFunnel)
+  root.querySelectorAll('.fn-pane').forEach(p=>{
+    const on = (p.dataset.pane==='jr')===!!lit;
+    p.classList.toggle('off', !on);
+    if(on) { p.classList.remove('in'); void p.offsetWidth; p.classList.add('in'); }
+  });
   applyJourneyStage(root, lit);
 
   root.querySelectorAll('[data-lvl]').forEach(el=>{
@@ -3424,23 +3617,45 @@ function wireYearHover(root){
     root.querySelectorAll('[data-yr].hi').forEach(el=>el.classList.remove('hi'));
   });
 }
+// A label stood on end, reading upward from (x, y), centred on the column x.
+function yrStand(cls, x, y, t){
+  const X=(x+3.5).toFixed(1), Y=y.toFixed(1);
+  return '<text class="'+cls+'" x="'+X+'" y="'+Y+'" transform="rotate(-90 '+X+' '+Y+')">'+t+'</text>';
+}
 function sceneYear(){
   const P=SY.per_year, M=SY.per_year_meta;
   if(!P||!P.length) return '';
   // h leaves the note its own band: at 400 the first note line sat 8px into the
   // year tick row (ticks y360-373, note y365-379), across every period.
-  const w=760,h=412,pad={l:52,r:26,t:26};
+  // N is the phone layout (see SW). Sixteen periods in a 260px column leave
+  // about 15px a column, so the counts stand on end above their bars, the
+  // panel title and the note wrap to the column, and the frame grows to fit.
+  const N=SW>0, w=N?SW:760, pad=N?{l:34,r:6,t:26}:{l:52,r:26,t:26};
   const iw=w-pad.l-pad.r;
   const yrs=[]; for(let y=P[0].period;y<=P[P.length-1].period;y++) yrs.push(y);
   const bw=iw/yrs.length, cx=y=>pad.l+bw*(yrs.indexOf(y)+0.5);
   const by=P.reduce((a,b)=>Math.max(a,b.n),0);
-  const topH=120, topY=pad.t+14;
+  // standing counts need the longest one's length above the tallest bar
+  const NV=6.1*Math.max(...P.map(d=>d.n.toLocaleString().length))+8;
+  const topH=N?110:120, topY=N?pad.t+NV:pad.t+14;
   const rMax=Math.max(12, Math.ceil(P.reduce((a,b)=>
     Math.max(a, b.projected!=null?b.projected:b.rate),0)));
-  const botY=topY+topH+62, botH=132;
+  const t2=N ? svgWrap('Share reaching the majors, of signings in MLB\u2019s transaction log',
+                       w-pad.l, 6.4)
+             : ['Share reaching the majors, of signings in MLB\u2019s transaction log'];
+  const botY=topY+topH+(N?30+15*t2.length:62), botH=N?120:132;
   const sy=v=>botY+botH-botH*v/rMax;
+  // SVG text does not wrap, so the note is set as explicit lines.
+  const noteS='Hollow points have not finished arriving. The whisker marks where a '+
+    'cohort lands if it finishes like those that already have; periods under '+
+    M.min_maturity+'% maturity get no estimate.';
+  const note=N ? svgWrap(noteS, w, 6.9)
+    : ['Hollow points have not finished arriving. The whisker marks where a',
+       'cohort lands if it finishes like those that already have; periods under '+
+         M.min_maturity+'% maturity get no estimate.'];
+  const h=N ? Math.ceil(botY+botH+44+15*(note.length-1)+8) : 412;
   let o='<svg class="sc-svg" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="xMidYMid meet">'+
-    '<text class="fn-l2" x="'+pad.l+'" y="'+(topY-6)+'">Players signed</text>';
+    '<text class="fn-l2" x="'+pad.l+'" y="'+(N?pad.t-8:topY-6)+'">Players signed</text>';
   // ---- panel 1: how many signed ----
   P.forEach(d=>{
     const bh=Math.max(topH*d.n/by,1), x=cx(d.period)-bw*0.32;
@@ -3449,13 +3664,14 @@ function sceneYear(){
         +(bw*0.64).toFixed(1),+bh.toFixed(1),3)+'"/>'+
        '<rect class="yr-hit" data-yr="'+d.period+'" x="'+(cx(d.period)-bw/2).toFixed(1)+
        '" y="'+topY+'" width="'+bw.toFixed(1)+'" height="'+topH+'"/>'+
-       '<text class="yr-n" x="'+cx(d.period).toFixed(1)+'" y="'+(topY+topH-bh-5).toFixed(1)+
-       '" text-anchor="middle">'+d.n.toLocaleString()+'</text>';
+       (N ? yrStand('yr-n yr-nv', cx(d.period), topY+topH-bh-5, d.n.toLocaleString())
+          : '<text class="yr-n" x="'+cx(d.period).toFixed(1)+'" y="'+(topY+topH-bh-5).toFixed(1)+
+            '" text-anchor="middle">'+d.n.toLocaleString()+'</text>');
   });
   o+='<line class="ax" x1="'+pad.l+'" y1="'+(topY+topH)+'" x2="'+(pad.l+iw)+'" y2="'+(topY+topH)+'"/>';
   // ---- panel 2: what share of them arrived ----
-  o+='<text class="fn-l2" x="'+pad.l+'" y="'+(botY-16)+'">Share reaching the majors, '+
-     'of signings in MLB\u2019s transaction log</text>'+
+  o+=t2.map((l,k)=>'<text class="fn-l2" x="'+pad.l+'" y="'+
+       (botY-16-15*(t2.length-1-k))+'">'+l+'</text>').join('')+
      '<line class="ax" x1="'+pad.l+'" y1="'+botY+'" x2="'+pad.l+'" y2="'+(botY+botH)+'"/>';
   for(let t=0;t<=rMax;t+=4){
     o+='<line class="yr-grid" x1="'+pad.l+'" y1="'+sy(t).toFixed(1)+'" x2="'+(pad.l+iw)+
@@ -3467,10 +3683,15 @@ function sceneYear(){
   const mp=P.filter(d=>d.mature);
   if(mp.length){
     const base=100*mp.reduce((a,b)=>a+b.mlb,0)/mp.reduce((a,b)=>a+b.n,0);
+    // On a phone the one line runs back across the dots it is describing, so it
+    // stacks into the empty top right instead -- the periods under it are the
+    // recent ones, which sit low.
+    const bl=N ? [base.toFixed(1)+'% across the', 'settled periods']
+               : [base.toFixed(1)+'% across the settled periods'];
     o+='<line class="yr-base" x1="'+pad.l+'" y1="'+sy(base).toFixed(1)+'" x2="'+(pad.l+iw)+
        '" y2="'+sy(base).toFixed(1)+'"/>'+
-       '<text class="yr-basel" x="'+(pad.l+iw-2)+'" y="'+(sy(base)-6).toFixed(1)+
-       '" text-anchor="end">'+base.toFixed(1)+'% across the settled periods</text>';
+       bl.map((t,k)=>'<text class="yr-basel" x="'+(pad.l+iw-2)+'" y="'+
+         (sy(base)-6-13*(bl.length-1-k)).toFixed(1)+'" text-anchor="end">'+t+'</text>').join('');
   }
   const solid=P.filter(d=>d.mature).map(d=>cx(d.period).toFixed(1)+','+sy(d.rate).toFixed(1));
   if(solid.length>1) o+='<polyline class="yr-line" points="'+solid.join(' ')+'"/>';
@@ -3489,18 +3710,18 @@ function sceneYear(){
        y.toFixed(1)+'" r="13"/>';
   });
   // ---- shared year axis, with the missing period marked ----
-  yrs.forEach(y=>{
+  // a two-digit year is 12px of 10px mono; under 13.5px a column, label every other
+  const every=(N && bw<13.5) ? 2 : 1;
+  yrs.forEach((y,k)=>{
     const gone=(M.missing||[]).indexOf(y)>=0;
-    o+='<text class="yr-x'+(gone?' gone':'')+'" x="'+cx(y).toFixed(1)+'" y="'+(botY+botH+16)+
-       '" text-anchor="middle">'+String(y).slice(2)+'</text>';
-    if(gone) o+='<text class="yr-none" x="'+cx(y).toFixed(1)+'" y="'+(topY+topH-4)+
-       '" text-anchor="middle">no period</text>';
+    if(k%every===0) o+='<text class="yr-x'+(gone?' gone':'')+'" x="'+cx(y).toFixed(1)+
+       '" y="'+(botY+botH+16)+'" text-anchor="middle">'+String(y).slice(2)+'</text>';
+    if(gone) o+= N ? yrStand('yr-none yr-nb', cx(y), topY+topH-4, 'no period')
+       : '<text class="yr-none" x="'+cx(y).toFixed(1)+'" y="'+(topY+topH-4)+
+         '" text-anchor="middle">no period</text>';
   });
-  // SVG text does not wrap, so the note is set as explicit lines.
-  const note=['Hollow points have not finished arriving. The whisker marks where a',
-              'cohort lands if it finishes like those that already have; periods under '+
-                M.min_maturity+'% maturity get no estimate.'];
-  note.forEach((t,i)=>{ o+='<text class="cnote" x="'+pad.l+'" y="'+(h-24+i*15)+'">'+t+'</text>'; });
+  note.forEach((t,i)=>{ o+='<text class="cnote" x="'+(N?0:pad.l)+'" y="'+
+    (N ? botY+botH+44+i*15 : h-24+i*15)+'">'+t+'</text>'; });
   return o+'</svg>';
 }
 
@@ -3554,16 +3775,22 @@ function grFrame(){
 function sceneGrowth(){
   const G=grData(); if(!G||!D.flow) return '';
   const f=grFrame(), rx=(f.x+f.w-18).toFixed(1);
-  let o=grTitle()+'<svg class="sc-svg gr-svg" viewBox="'+
+  // The map cannot reflow: its frame is the geography. On a phone it prints at
+  // about half size, so its labels are set K times larger in map units, K being
+  // how much the frame is shrunk, and grPaint scales its spacing to match.
+  // The period itself is 26 units and reads at 13px on a phone as it is.
+  const N=SW>0, K=N ? Math.max(1, f.w/SW) : 1, MW=N?SW:760;
+  let o=grTitle()+'<svg class="sc-svg gr-svg'+(K>1?' gr-k':'')+'" data-k="'+K.toFixed(3)+
+        '" style="--gk:'+K.toFixed(3)+'" viewBox="'+
         [f.x,f.y,f.w,f.h].map(v=>v.toFixed(1)).join(' ')+'" '+
         'preserveAspectRatio="xMidYMid meet" role="img">'+
         '<g class="gr-land">'+D.flow.shapes.map(s=>'<path d="'+s.d+
           '" fill="var(--land)" stroke="var(--surface)" stroke-width="0.7"/>').join('')+'</g>'+
         '<g class="gr-bub"></g><g class="gr-lab"></g>'+
         '<text class="gr-when" x="'+rx+'" y="'+(f.y+40).toFixed(1)+'" text-anchor="end"></text>'+
-        '<text class="gr-tot" x="'+rx+'" y="'+(f.y+62).toFixed(1)+'" text-anchor="end"></text>'+
+        '<text class="gr-tot" x="'+rx+'" y="'+(f.y+(K>1?48+12*K:62)).toFixed(1)+'" text-anchor="end"></text>'+
         '</svg>'+
-        '<svg class="sc-svg gr-mix" viewBox="0 0 760 74" '+
+        '<svg class="sc-svg gr-mix" viewBox="0 0 '+MW+' 74" '+
         'preserveAspectRatio="xMidYMid meet" role="img"><g class="gr-mixg"></g>'+
         '<text class="gr-mixh" x="8" y="12"></text></svg>';
   return o;
@@ -3598,9 +3825,27 @@ function grMix(root, DUR){
   const parts=[{k:'vz',   l:'Venezuela',          v:vz,        c:grHue('Venezuela')},
                {k:'dr',   l:'Dominican Republic', v:dr,        c:grHue('Dominican Republic')},
                {k:'rest', l:'Everywhere else',    v:tot-vz-dr, c:grHue('')}];
-  const L=8, IW=744, Y=24, BH=28, GAP=2;
+  const VW=svg.node().viewBox.baseVal.width||760, narrow=VW<760;
+  const L=8, IW=VW-16, Y=24, BH=28, GAP=2;
   let x=L;
   parts.forEach(p=>{ p.x=x; p.w=Math.max(IW*p.v/tot,1); p.pc=100*p.v/tot; x+=p.w; });
+  // The wide strip labels by share (7% and 11%). A narrow one has to ask
+  // whether the text actually fits its segment -- but the segments move a pixel
+  // at a time while the animation runs, so a plain threshold makes a label on
+  // the edge blink. Measure the text rather than estimate it, and keep a label
+  // that is already up until it is clearly too wide: 8px of deadband is wider
+  // than anything a single frame moves.
+  // The text is set to be measured and cleared again if it does not fit, rather
+  // than hidden: an inline opacity would override the block's entrance
+  // animation and the labels would arrive before the chart around them.
+  const fitLab=(node, txt, w, pad)=>{
+    node.textContent=txt;
+    const len=node.getComputedTextLength();
+    const on = node.__on ? len+pad<=w+8 : len+pad<=w;
+    node.__on=on;
+    if(!on) node.textContent='';
+    return on;
+  };
   const tr=sel=>DUR?sel.transition().duration(DUR).ease(d3.easeCubicOut):sel;
   svg.select('.gr-mixh').text('Share of the '+G.periods[grIdx()].label+' signing period');
   const g=svg.select('.gr-mixg').selectAll('g').data(parts,d=>d.k)
@@ -3613,9 +3858,15 @@ function grMix(root, DUR){
   tr(g.select('rect')).attr('x',d=>d.x.toFixed(1))
     .attr('width',d=>Math.max(d.w-GAP,1).toFixed(1)).attr('fill',d=>d.c);
   tr(g.select('.gr-mixp')).attr('x',d=>(d.x+d.w/2).toFixed(1)).attr('y',Y+19);
-  g.select('.gr-mixp').text(d=>d.pc>=7?d.pc.toFixed(1)+'%':'');
+  g.select('.gr-mixp').each(function(d){
+    if(narrow) fitLab(this, d.pc.toFixed(1)+'%', d.w, 10);
+    else this.textContent = d.pc>=7 ? d.pc.toFixed(1)+'%' : '';
+  });
   tr(g.select('.gr-mixl')).attr('x',d=>(d.x+d.w/2).toFixed(1));
-  g.select('.gr-mixl').text(d=>d.pc>=11?d.l:'');
+  g.select('.gr-mixl').each(function(d){
+    if(narrow) fitLab(this, d.l, d.w, 8);
+    else this.textContent = d.pc>=11 ? d.l : '';
+  });
   g.select('rect').select('title').remove();
   g.select('rect').append('title')
     .text(d=>d.l+': '+Math.round(d.v).toLocaleString()+' of '+
@@ -3683,10 +3934,16 @@ function grPaint(root, animate){
   // country gets named instead of dropped -- the old radius>=16 rule labelled
   // nothing at all in the opening period, when the biggest circle is 15.4.
   const FR=grFrame(), big=rows.map(d=>({x:d.x, y:d.y, r:r(val(d))}));
-  const lab=rows.slice(0,8).map((d,i)=>{
+  // K > 1 on a phone, where the labels are set larger in map units (sceneGrowth);
+  // every spacing below is in label-sized units and scales with it
+  const K=+svg.attr('data-k')||1;
+  // Eight labels fit the wide map. On a phone they are set K times larger over
+  // the same geography, so the tail of them lands on top of the Caribbean;
+  // label the six biggest and leave the rest to the circles' own hover.
+  const lab=rows.slice(0,K>1?6:8).map((d,i)=>{
     const rr=big[i].r, txt=Math.round(val(d)).toLocaleString();
     const o={country:d.country, cx:d.x, cy:d.y, rr:rr, txt:txt, lead:null,
-             inside:rr>=txt.length*3.1+5};
+             inside:rr>=(txt.length*3.1+5)*K};
     o.host=big.find(b=>b.r>rr+1 && Math.hypot(d.x-b.x,d.y-b.y)<b.r)||null;
     if(o.host) o.inside=false;
     o.text=o.inside?d.country:d.country+' '+txt;
@@ -3698,43 +3955,62 @@ function grPaint(root, animate){
   // sits inside Venezuela with Aruba 15 units off, and a line drawn straight
   // out along the radius ends on Aruba and reads as labelling the wrong island.
   const put=[];
-  const boxOf=(o,x,y)=>[x-o.text.length*2.95, y-9, x+o.text.length*2.95, y+3];
+  // 4K of air either side, or two labels that merely miss each other print as
+  // one run of text: "Colombia 317" hard against Venezuela's "4,669".
+  const boxOf=(o,x,y)=>[x-o.text.length*2.95*K-4*K, y-9*K, x+o.text.length*2.95*K+4*K, y+3*K];
+  // A count printed inside its own circle is not placed by the loop below, so
+  // its box goes down first: otherwise a neighbour's label is free to land on
+  // top of it, which is how "Colombia 317" came to sit against Venezuela's
+  // 4,669 on a phone, where the labels are largest against the map.
+  lab.forEach(o=>{ if(o.inside) put.push(
+    [o.cx-o.txt.length*2.95*K-4*K, o.cy-7*K, o.cx+o.txt.length*2.95*K+4*K, o.cy+5*K]); });
   const overLabel=b=>put.some(q=>b[0]<q[2]&&q[0]<b[2]&&b[1]<q[3]&&q[1]<b[3]);
   const inFrame=b=>b[0]>FR.x+2 && b[2]<FR.x+FR.w-2 && b[1]>FR.y+2 && b[3]<FR.y+FR.h-2;
   lab.forEach(o=>{
     if(!o.host){
-      const base=o.cy+(o.inside?o.rr+13:o.rr+12);
-      for(const dy of [0,-13,13,-26,26,-39,39]){
-        const b=boxOf(o,o.cx,base+dy);
+      const base=o.cy+(o.inside?o.rr+13*K:o.rr+12*K);
+      // On a phone the labels are K times larger over the same geography, so the
+      // longest name beside a circle near an edge fits nowhere and the biggest
+      // country on the map lost its label. Slide it along the frame instead --
+      // it stays under its own circle, just not centred on it.
+      const half=o.text.length*2.95*K+4*K;
+      // 3, not 2: inFrame's test is strict, so a box clamped to exactly the
+      // margin fails it and the label is dropped.
+      const px=K>1 ? Math.max(FR.x+3+half, Math.min(FR.x+FR.w-3-half, o.cx)) : o.cx;
+      for(const dy of [0,-13,13,-26,26,-39,39].map(v=>v*K)){
+        const b=boxOf(o,px,base+dy);
         if(overLabel(b)||!inFrame(b)) continue;
-        o.ax=o.cx; o.ty=base+dy; put.push(b); return;
+        o.ax=px; o.ty=base+dy; put.push(b); return;
       }
       o.drop=1; return;
     }
     const h=o.host, a0=Math.atan2(o.cy-h.y, o.cx-h.x);
     const near=big.filter(b=>b!==h && Math.hypot(b.x-o.cx,b.y-o.cy)>0.5);
-    for(const gap of [26,40,56]){
+    for(const gap of [26,40,56].map(v=>v*K)){
       for(const t of [0,-0.5,0.5,-1,1,-1.5,1.5,-2,2,-2.6,2.6,Math.PI]){
         const px=h.x+Math.cos(a0+t)*(h.r+gap), py=h.y+Math.sin(a0+t)*(h.r+gap);
         const b=boxOf(o,px,py);
         if(overLabel(b)||!inFrame(b)) continue;
-        if(near.some(c=>Math.hypot(px-c.x,py-c.y)<c.r+13)) continue;
+        if(near.some(c=>Math.hypot(px-c.x,py-c.y)<c.r+13*K)) continue;
         let graze=false;
         for(let u=0.12;u<0.95 && !graze;u+=0.12){
           const qx=o.cx+(px-o.cx)*u, qy=o.cy+(py-o.cy)*u;
-          graze=near.some(c=>Math.hypot(qx-c.x,qy-c.y)<c.r+5);
+          graze=near.some(c=>Math.hypot(qx-c.x,qy-c.y)<c.r+5*K);
         }
         if(graze) continue;
         const lx=px-o.cx, ly=py-o.cy, lm=Math.hypot(lx,ly)||1;
         o.ax=px; o.ty=py; put.push(b);
         // the label's own halo masks the end of the line, so run it in close
-        o.lead=[o.cx+lx/lm*o.rr, o.cy+ly/lm*o.rr, px-lx/lm*9, py-ly/lm*9];
+        o.lead=[o.cx+lx/lm*o.rr, o.cy+ly/lm*o.rr, px-lx/lm*9*K, py-ly/lm*9*K];
         return;
       }
     }
     o.drop=1;
   });
-  svg.select('.gr-lab').selectAll('g').data(lab.filter(o=>!o.drop),d=>d.country)
+  // A dropped label still prints its count inside its own circle on a phone:
+  // the count is the figure, and it is placed by the circle, not by the packer.
+  svg.select('.gr-lab').selectAll('g')
+    .data(lab.filter(o=>!o.drop || (K>1 && o.inside)),d=>d.country)
     .join(en=>{const g=en.append('g');
         g.append('line').attr('class','gr-ld');
         g.append('text').attr('class','gr-n').attr('text-anchor','middle');
@@ -3745,9 +4021,10 @@ function grPaint(root, animate){
         .attr('x1',d=>d.lead?d.lead[0].toFixed(1):0).attr('y1',d=>d.lead?d.lead[1].toFixed(1):0)
         .attr('x2',d=>d.lead?d.lead[2].toFixed(1):0).attr('y2',d=>d.lead?d.lead[3].toFixed(1):0);
       s.select('.gr-n').attr('display',d=>d.inside?null:'none')
-        .attr('x',d=>d.cx.toFixed(1)).attr('y',d=>(d.cy+2).toFixed(1)).text(d=>d.txt);
-      s.select('.gr-c').attr('x',d=>d.ax.toFixed(1))
-        .attr('y',d=>d.ty.toFixed(1)).text(d=>d.text);
+        .attr('x',d=>d.cx.toFixed(1)).attr('y',d=>(d.cy+2*K).toFixed(1)).text(d=>d.txt);
+      s.select('.gr-c').attr('display',d=>d.drop?'none':null)
+        .attr('x',d=>(d.drop?d.cx:d.ax).toFixed(1))
+        .attr('y',d=>(d.drop?d.cy:d.ty).toFixed(1)).text(d=>d.text);
     });
   const tot=rows.reduce((a,b)=>a+val(b),0);
   svg.select('.gr-when').text(G.periods[grIdx()].label);
@@ -3791,8 +4068,12 @@ function wireGrowth(root){
   fig.insertBefore(bar, fig.querySelector('svg.gr-svg'));
   bar.querySelector('.gr-play').onclick=()=>{ grTimer?grStop(root):grPlay(root); };
   bar.querySelector('.gr-scrub').oninput=e=>{ grStop(root); grPos=+e.target.value; grPaint(root,false); };
-  bar.querySelector('.gr-per').onchange=e=>{
-    grMode=e.target.checked?'per':'cum'; grPaint(root,true); };
+  // grMode outlives a redraw (a rotation, a width change) but the control row
+  // is built fresh, so the box has to be set from the mode or the reader's
+  // first tap re-selects the view they are already looking at and nothing moves.
+  const per=bar.querySelector('.gr-per');
+  per.checked = grMode==='per';
+  per.onchange=e=>{ grMode=e.target.checked?'per':'cum'; grPaint(root,true); };
   grPaint(root,false);
 }
 
@@ -3940,14 +4221,17 @@ function ageFoot(){
 // they need 830px against a 950px viewport; apart they needed 1,171px.
 function sceneAges(){
   const H=SY.pos[0], P=SY.pos[1], tot=H.n+P.n, hs=H.n/tot;
-  const B=SY.age_bands, w=760, GAP=2;
+  // N is the phone layout (see SW): the column's own width, a shorter plot,
+  // and a tighter gutter between columns so each is still wide enough for its
+  // white percentage and the band name under it.
+  const N=SW>0, B=SY.age_bands, w=N?SW:760, GAP=2;
   // No mark for the overall split. It had a bar of its own, which read as a
   // separate chart, and then a rule across the columns, which read as clutter.
   // The animation carries it instead: every column starts on the market share
   // and leaves it, so the common origin is the reference. The number itself is
   // in the sentence above the chart.
-  const ph=230, p2={l:26,t:28,r:26,b:40}, h=p2.t+ph+p2.b;
-  const pw=w-p2.l-p2.r, slot=pw/B.length, cw=Math.min(88,slot-30);
+  const ph=N?200:230, p2=N?{l:4,t:16,r:4,b:36}:{l:26,t:28,r:26,b:40}, h=p2.t+ph+p2.b;
+  const pw=w-p2.l-p2.r, slot=pw/B.length, cw=N?Math.min(64,slot-10):Math.min(88,slot-30);
   const pc=v=>Math.round(100*v);                 // whole numbers only, and the
   const pcP=v=>100-pc(v);                        // pair always sums to 100
   // The second view is each band's share of all signings, on the signings whose
@@ -4207,6 +4491,32 @@ function heroText(st){
 function drawStory(){
   if(storyDrawn) return;
   storyDrawn=true;
+  syncHdr();
+  renderStory();
+  const cw=storyColW(), nw=cw>0 && cw<NARROW_PX ? Math.floor(cw) : 0;
+  if(nw!==SW){ SW=nw; SH=storyH(); renderStory(); }
+  window.addEventListener('resize', ()=>{
+    clearTimeout(storyFitT); storyFitT=setTimeout(storyFit, 150); }, {passive:true});
+}
+// Redraw when the column crosses the phone breakpoint or, on a phone, changes
+// width -- a rotation, a split screen. Height-only resizes, which a phone fires
+// every time its address bar slides, change nothing and redraw nothing. A
+// hidden tab measures 0 and is left alone; showing it calls this again.
+let storyFitT=0;
+function storyFit(){
+  if(!storyDrawn) return;
+  syncHdr();
+  const cw=storyColW(); if(!cw) return;
+  const nw=cw<NARROW_PX ? Math.floor(cw) : 0;
+  const was=storyShort(), sh=storyH();
+  const same = nw===SW || (nw && SW && Math.abs(nw-SW)<4);
+  SH=sh;
+  if(same && was===storyShort()) return;   // same layout, same tier: nothing to redraw
+  SW=nw; renderStory();
+}
+function renderStory(){
+  // a playing growth map would keep painting into the blocks being replaced
+  if(grTimer){ grTimer.stop(); grTimer=null; }
   renderBlocks('#sc-blocks', null);
   renderBlocks('#cmp-blocks', 'cmp');
   // Wired here, not in revealBlock: reveal depends on a scroll event, and a
@@ -4248,12 +4558,17 @@ function renderBlocks(sel, tab){
     const st=pair[0], i=pair[1];
     const sg = st.stages ? st.stages[0] : st;
     // the funnel prints its figure inside the plot, so it needs no header row
+    // A pinned figure on a phone has no room for its notes -- they are 205px of
+    // a 768px screen, and they read the same at every stage -- so they go after
+    // the pinned section instead, where the reader meets them on the way out.
+    const footOut = SW && st.stages;
+    const foot='<div class="stage-foot note sb-swap">'+(sg.foot||'')+'</div>';
     const fig =
       '<div class="sb-fig"><div class="sb-head'+(st.headInChart?' gone':'')+'">'+
         '<div class="stage-count">'+heroText(Object.assign({},st,sg))+'</div>'+
         '<div class="stage-label sb-swap">'+sg.label+'</div></div>'+
       '<div role="img" aria-label="'+sg.label+'">'+sceneFor(st,sg)+'</div>'+
-      '<div class="stage-foot note sb-swap">'+(sg.foot||'')+'</div></div>';
+      (footOut?'':foot)+'</div>';
     // noHead blocks title themselves inside the figure. paintStage has to
     // tolerate the missing nodes or the first stage change throws and takes
     // the whole script down with it.
@@ -4273,8 +4588,14 @@ function renderBlocks(sel, tab){
     return '<article class="sblock" data-i="'+i+'" data-stages="'+st.stages.length+
            '" data-stage="-1" data-lead="'+(lead/tvh).toFixed(4)+
            '" data-hold="'+(hold/tvh).toFixed(4)+
-           '"><div class="sb-stick">'+head+fig+'</div>'+
-           '<div class="sb-track" style="height:'+tvh+'vh"></div></article>';
+           // The pinned figure can cover anything inside its own containing
+           // block, so on a phone the notes card sits OUTSIDE the pinned
+           // section rather than after it: otherwise the figure, still pinned
+           // through the end of the block, is painted straight over it.
+           '">'+(footOut?'<div class="sb-pin">':'')+
+           '<div class="sb-stick">'+head+fig+'</div>'+
+           '<div class="sb-track" style="height:'+tvh+'vh"></div>'+
+           (footOut?'</div><div class="sb-fig sb-foot-out">'+foot+'</div>':'')+'</article>';
   }).join('');
 }
 // The listeners used to be attached inside drawStory, so a reader who opened a
