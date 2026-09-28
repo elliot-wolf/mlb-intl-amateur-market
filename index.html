@@ -492,17 +492,6 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .cba-legend i.dot{width:9px;height:9px;border-radius:50%}
 #cbatip{position:absolute;z-index:30}
 .cbawrap{position:relative}
-#mkttip{position:absolute;z-index:30}
-/* A section header is a beat with no figure: it names the half of the scroll
-   that follows and carries no data of its own. */
-.mk-sect{border-top:2px solid var(--ink-2);padding-top:30px}
-.mk-sh{font-size:23px;letter-spacing:-.01em;margin:0 0 6px}
-/* Small multiples. Cuba and Mexico are a few per cent of the market each, so
-   they get their own axes side by side rather than being flattened onto the
-   composition scale, where neither move would be visible. */
-.mk-sm{display:flex;gap:16px;flex-wrap:wrap}
-.mk-sm figure{flex:1 1 320px;margin:0}
-.mk-sm figcaption{font-size:12px;font-weight:600;color:var(--ink-2);margin:0 0 2px}
 .mk-tab{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
 .mk-tab summary{font-size:12px;color:var(--muted);cursor:pointer}
 .mk-tab summary:hover{color:var(--ink)}
@@ -510,18 +499,10 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 .mk-tab th,.mk-tab td{padding:3px 6px;border-bottom:1px solid var(--line);text-align:left}
 .mk-tab th.n,.mk-tab td.n{text-align:right;font-variant-numeric:tabular-nums}
 .mk-tab th{color:var(--muted);font-weight:600}
-/* The caption is the article voice: one sentence, large enough to read as
-   prose rather than as a chart label, swapped as the reader scrolls. */
-.mk-cap{font-family:"Source Serif 4",Georgia,serif;font-size:17px;line-height:1.55;
-  color:var(--ink);margin:14px 0 0;max-width:62ch;min-height:3.2em;
-  transition:opacity .2s ease}
-.mk-cap.out{opacity:0}
-@media (prefers-reduced-motion: reduce){ .mk-cap{transition:none} }
 .cba-tl summary{font-size:12px;color:var(--muted);cursor:pointer;font-weight:600;
   letter-spacing:.03em;text-transform:uppercase}
 .cba-tl summary:hover{color:var(--ink)}
 .cba-tl[open] .cba-rules{margin-top:10px}
-.mk-plot{min-height:120px}
 /* ---------- signing-flow map ---------- */
 .flsec{border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:20px}
 .fl-h{font-size:19px;margin:0 0 4px}
@@ -623,9 +604,6 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 /* Centre the pinned figure in the window. Parked hard under the header it sat
    in the top half with a screenful of nothing beneath it; the story reads far
    better when the graphic is where the eye already is. */
-#mkt-blocks .sb-stick{top:max(58px, calc((100vh - 560px) / 2))}
-@media (max-width:900px){ #mkt-blocks .sb-stick{top:max(50px, calc((100vh - 520px) / 2))} }
-@media (max-width:720px){ .mk-sm{display:block} .mk-sm figure+figure{margin-top:14px} }
 .sb-swap{transition:opacity .2s ease}
 .sb-swap.out{opacity:0}
 .sb-fig svg path.mk,.sb-fig svg rect.mk,.sb-fig svg g.fn{
@@ -665,9 +643,6 @@ main{max-width:1280px;margin:0 auto;padding:26px 22px 90px}
 }
 @media (max-width:560px){
   .sb-stick{top:calc(var(--hdr,118px) + 8px)}
-  /* Market trends pins its own figures and carries its own offset, which slides
-     under the same header. Its charts still draw at their wide sizes. */
-  #mkt-blocks .sb-stick{top:calc(var(--hdr,118px) + 8px)}
 }
 /* Scroll-driven reveal. The .anim class is added by script only when motion is
    wanted, so the default rendering -- no JS, reduced motion, a print -- is the
@@ -916,7 +891,6 @@ footer{max-width:1280px;margin:0 auto;padding:0 22px 60px}
     <button class="tab" role="tab" id="t-cba" aria-selected="false" aria-controls="p-cba">Market trends</button>
     <button class="tab" role="tab" id="t-stars" aria-selected="false" aria-controls="p-stars">Hometowns</button>
     <button class="tab" role="tab" id="t-era" aria-selected="false" aria-controls="p-era">Market trends (eras draft)</button>
-    <button class="tab" role="tab" id="t-mkt" aria-selected="false" aria-controls="p-mkt">Market trends (old)</button>
     <button class="tab" role="tab" id="t-ov" aria-selected="false" aria-controls="p-ov">Overview</button>
     <button class="tab" role="tab" id="t-map" aria-selected="false" aria-controls="p-map">Map</button>
     <button class="tab" role="tab" id="t-teams" aria-selected="false" aria-controls="p-teams">Teams</button>
@@ -965,17 +939,6 @@ footer{max-width:1280px;margin:0 auto;padding:0 22px 60px}
 
   <section class="panel" id="p-stars" role="tabpanel" aria-labelledby="t-stars" hidden>
     <div class="sblocks"><div class="sblock"><div class="sb-fig" id="st-fig"></div></div></div>
-  </section>
-
-  <section class="panel" id="p-mkt" role="tabpanel" aria-labelledby="t-mkt" hidden>
-    <div class="lede">
-      <h1>PLACEHOLDER heading</h1>
-      <p class="prose">PLACEHOLDER. How this market changed across twelve signing periods,
-      and where a change in the data lands on a change in the rules.</p>
-    </div>
-    <div id="mkt-rules"></div>
-    <div class="sblocks" id="mkt-blocks"></div>
-    <div class="tip" id="mkttip" hidden></div>
   </section>
 
   <section class="panel" id="p-ov" role="tabpanel" aria-labelledby="t-ov" hidden>
@@ -1246,7 +1209,7 @@ const PUBLIC = !!D.public;
 // 't-index' can never be added: the player index IS the per-player census --
 // names and dates of birth of minors -- which the public build strips, so the
 // tab would either ship that data or serve an empty table.
-const V1_TABS = ['t-story', 't-cba', 't-mkt'];
+const V1_TABS = ['t-story', 't-cba'];
 if(PUBLIC){
   // Hide by removing the nav BUTTON and leaving the panel in the DOM. Deleting
   // a panel removed controls that page setup wires at load (#f-c, #f-p, #f-t),
@@ -1684,7 +1647,6 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   if(t.id==='t-map') drawMap();
   if(t.id==='t-ov') drawOverview();
   if(t.id==='t-story'){ drawStory(); storyFit(); }
-  if(t.id==='t-mkt') drawMkt();
   if(t.id==='t-cba') drawCba();
   if(t.id==='t-stars') drawStars();
   if(t.id==='t-era') drawEra();
@@ -4773,250 +4735,6 @@ const EXLABEL={
 const EXORDER=['unresolved_person','no_birth_date','non_mlb_org','signed_before_window',
                'was_drafted','prior_professional','draft_eligible_country','age_gte_23.0'];
 let meDrawn=false;
-/* ---------- Market Trends ---------- */
-const MK=D.mkt;
-const MKP=MK.periods, MKN=MKP.length;
-const pcM=(v,d)=>v===null||v===undefined?'—':(100*v).toFixed(d===undefined?0:d)+'%';
-const usdM=v=>v<1000?'$0':v>=1e6?('$'+(v/1e6).toFixed(v>=1e7?0:1)+'M')
-                              :('$'+Math.round(v/1e3)+'k');
-const mkAt=p=>MKP.find(x=>x.p===p);
-const ERAFILL=['var(--surface-2)','transparent','var(--surface-2)'];
-
-function mkEraSpans(){
-  return MK.eras.map(e=>{
-    const idx=MKP.map((p,i)=>({e:p.era,i})).filter(o=>o.e===e.era).map(o=>o.i);
-    return {era:e.era,a:Math.min.apply(null,idx),b:Math.max.apply(null,idx)};
-  });
-}
-
-// One line form for every beat. `marks` names which rule markers to draw: a beat
-// shows the join it is about, not all four, so the chart never argues by clutter.
-function mkLine(cfg){
-  const W=cfg.w||812, H=cfg.h||348, L=cfg.L||58, R=cfg.R||78, T=16, Bm=cfg.small?38:46;
-  const iw=W-L-R, ih=H-T-Bm;
-  const vals=[]; cfg.series.forEach(s=>s.vals.forEach(v=>{ if(v!==null&&v!==undefined) vals.push(v); }));
-  let lo=cfg.ymin!==undefined?cfg.ymin:Math.min.apply(null,vals);
-  let hi=cfg.ymax!==undefined?cfg.ymax:Math.max.apply(null,vals);
-  if(hi===lo) hi=lo+1;
-  if(cfg.ymax===undefined) hi+=(hi-lo)*0.14;
-  const X=i=>L+i*(iw/(MKN-1)), Y=v=>T+ih-((v-lo)/(hi-lo))*ih;
-  let o='<svg viewBox="0 0 '+W+' '+H+'" width="100%" preserveAspectRatio="xMidYMid meet">';
-  mkEraSpans().forEach((sp,j)=>{
-    if(ERAFILL[j]==='transparent') return;
-    const x0=sp.a===0?L:(X(sp.a)+X(sp.a-1))/2, x1=sp.b===MKN-1?L+iw:(X(sp.b)+X(sp.b+1))/2;
-    o+='<rect x="'+x0.toFixed(1)+'" y="'+T+'" width="'+(x1-x0).toFixed(1)+'" height="'+ih+
-       '" fill="'+ERAFILL[j]+'"/>';
-  });
-  const ticks=cfg.ticks||4;
-  for(let t=0;t<=ticks;t++){
-    const v=lo+(hi-lo)*t/ticks, y=Y(v);
-    o+='<line x1="'+L+'" y1="'+y.toFixed(1)+'" x2="'+(L+iw)+'" y2="'+y.toFixed(1)+
-       '" stroke="var(--line)" stroke-width="1"/><text x="'+(L-8)+'" y="'+(y+3.5).toFixed(1)+
-       '" text-anchor="end" font-size="10.5" fill="var(--muted)">'+cfg.yfmt(v)+'</text>';
-  }
-  (cfg.marks||[]).forEach(pp=>{
-    const i=MKP.findIndex(p=>p.p===pp); if(i<0) return;
-    const ev=MK.events.find(e=>e.p===pp), x=X(i);
-    o+='<line x1="'+x.toFixed(1)+'" y1="'+T+'" x2="'+x.toFixed(1)+'" y2="'+(T+ih)+
-       '" stroke="var(--ink-2)" stroke-width="1" stroke-dasharray="3 3" opacity=".6"/>'+
-       '<text x="'+(x+4).toFixed(1)+'" y="'+(T+11)+'" font-size="10" font-weight="600" '+
-       'fill="var(--ink-2)">'+(ev?ev.short:'')+'</text>';
-  });
-  cfg.series.forEach(s=>{
-    // A dimmed series stays on the page so the reader keeps the context, but
-    // recedes so the sentence's own line is the one being read.
-    const op=s.dim?0.2:1;
-    let dstr='',open=false;
-    s.vals.forEach((v,i)=>{ if(v===null||v===undefined){open=false;return;}
-      dstr+=(open?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)+' '; open=true; });
-    if(!dstr) return;
-    o+='<path d="'+dstr.trim()+'" fill="none" stroke="'+s.color+'" stroke-width="2" '+
-       'opacity="'+op+'" stroke-linecap="round" stroke-linejoin="round"'+
-       (s.dash?' stroke-dasharray="5 4"':'')+'/>';
-    s.vals.forEach((v,i)=>{ if(v===null||v===undefined) return;
-      o+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(v).toFixed(1)+'" r="3.2" fill="'+s.color+
-         '" opacity="'+op+'" stroke="var(--surface)" stroke-width="2"/>'; });
-    let last=-1; s.vals.forEach((v,i)=>{ if(v!==null&&v!==undefined) last=i; });
-    if(last>=0&&s.label&&!cfg.small)
-      o+='<text x="'+(X(last)+7).toFixed(1)+'" y="'+(Y(s.vals[last])+3.5).toFixed(1)+
-         '" font-size="11" font-weight="600" opacity="'+op+'" fill="var(--ink-2)">'+
-         s.label+'</text>';
-  });
-  // The callout marks the single point the current sentence is about.
-  if(cfg.callout && cfg.callout.v!==null && cfg.callout.v!==undefined){
-    const c=cfg.callout, cx=X(c.i), cy=Y(c.v);
-    const up = cy>T+ih*0.4;
-    const ty = up ? cy-14 : cy+22;
-    o+='<line x1="'+cx.toFixed(1)+'" y1="'+cy.toFixed(1)+'" x2="'+cx.toFixed(1)+'" y2="'+
-       (up?cy-9:cy+9).toFixed(1)+'" stroke="'+c.color+'" stroke-width="1.5"/>'+
-       '<circle cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="5.5" fill="'+c.color+
-       '" stroke="var(--surface)" stroke-width="2"/>'+
-       '<text x="'+cx.toFixed(1)+'" y="'+ty.toFixed(1)+'" text-anchor="middle" font-size="13" '+
-       'font-weight="700" fill="var(--ink)">'+c.text+'</text>';
-  }
-  const step=cfg.small?3:2;
-  MKP.forEach((p,i)=>{
-    if(i%step && i!==MKN-1) return;
-    o+='<text x="'+X(i).toFixed(1)+'" y="'+(T+ih+16)+'" text-anchor="'+(i===MKN-1?'end':'middle')+
-       '" font-size="10" fill="var(--muted)">'+p.label+'</text>';
-  });
-  if(!cfg.small) mkEraSpans().forEach(sp=>{
-    o+='<text x="'+((X(sp.a)+X(sp.b))/2).toFixed(1)+'" y="'+(T+ih+33)+'" text-anchor="middle" '+
-       'font-size="10" letter-spacing=".05em" fill="var(--muted)">'+sp.era+'</text>';
-  });
-  MKP.forEach((p,i)=>{
-    const x0=i===0?L:(X(i)+X(i-1))/2, x1=i===MKN-1?L+iw:(X(i)+X(i+1))/2;
-    o+='<rect class="mkhit" data-i="'+i+'" x="'+x0.toFixed(1)+'" y="'+T+'" width="'+
-       (x1-x0).toFixed(1)+'" height="'+ih+'" fill="transparent"/>';
-  });
-  return o+'</svg>';
-}
-// Every chart ships a table twin. Direct labels only mark each series' last
-// point, so without this the intermediate values would be reachable by hover
-// alone -- and a tooltip must enhance a chart, never gate it.
-function mkTable(cols){
-  let o='<details class="mk-tab"><summary>Table view</summary>'+
-        '<table><thead><tr><th>Period</th>'+
-        cols.map(c=>'<th class="n">'+c.h+'</th>').join('')+'</tr></thead><tbody>';
-  MKP.forEach((p,i)=>{
-    o+='<tr><td>'+p.label+'</td>'+cols.map(c=>{
-      const v=c.vals[i];
-      return '<td class="n">'+(v===null||v===undefined?'\u2014':c.fmt(v))+'</td>';}).join('')+'</tr>';
-  });
-  return o+'</tbody></table></details>';
-}
-function mkLegend(items){
-  return '<div class="cba-legend">'+items.map(t=>'<span><i style="background:'+t[1]+'"></i>'+
-    t[0]+'</span>').join('')+'</div>';
-}
-
-/* ---------- the beats ---------- */
-// Each beat pins one figure and advances through short annotations. A stage
-// says one thing, and the chart shows the thing it is talking about: the
-// series in question is drawn full strength, the rest recede, and a callout
-// marks the single point the sentence is about.
-
-function mkBeatCountries(){
-  const dr=MKP.map(p=>p.s_dr), vz=MKP.map(p=>p.s_vz), rest=MKP.map(p=>1-p.s_dr-p.s_vz);
-  const last=MKN-1;
-  const draw=st=>mkLine({ymin:0,ymax:0.62,ticks:4,yfmt:v=>pcM(v),
-    series:[
-      {key:'dr',label:'Dominican Republic',color:'var(--chart-h)',vals:dr,dim:st.on&&st.on!=='dr'},
-      {key:'vz',label:'Venezuela',color:'var(--chart-p)',vals:vz,dim:st.on&&st.on!=='vz'},
-      {key:'rest',label:'Everywhere else',color:'var(--muted)',vals:rest,dim:!!st.on}],
-    callout:st.call});
-  return {stages:[
-    {cap:'More than four in five players here come from just two countries.'},
-    {cap:'Venezuela’s share has been climbing for a decade.', on:'vz',
-     call:{i:last,v:vz[last],color:'var(--chart-p)',text:pcM(vz[last])}},
-    {cap:'The Dominican Republic has slipped by about the same amount.', on:'dr',
-     call:{i:last,v:dr[last],color:'var(--chart-h)',text:pcM(dr[last])}},
-    {cap:'No rule change lines up with either move. This one looks like scouting, not policy.'}
-  ], draw, table:mkTable([
-    {h:'D.R.',vals:dr,fmt:v=>pcM(v,1)},{h:'Venezuela',vals:vz,fmt:v=>pcM(v,1)},
-    {h:'Rest',vals:rest,fmt:v=>pcM(v,1)},{h:'Signings',vals:MKP.map(p=>p.n),fmt:v=>v.toLocaleString()}])};
-}
-
-function mkBeatSmall(){
-  const cu=MKP.map(p=>p.n_cu), mx=MKP.map(p=>p.n_mx);
-  const i15=MKP.findIndex(p=>p.p===2015), i16=MKP.findIndex(p=>p.p===2016);
-  const i17=MKP.findIndex(p=>p.p===2017), i18=MKP.findIndex(p=>p.p===2018);
-  const draw=st=>{
-    const one=(vals,call,marks,dim)=>mkLine({w:406,h:268,L:44,R:34,small:true,ticks:3,ymin:0,
-      yfmt:v=>Math.round(v),
-      series:[{color:'var(--chart-h)',vals,dim}], callout:call, marks});
-    return '<div class="mk-sm">'+
-      '<figure><figcaption>Cuban signings</figcaption>'+
-        one(cu, st.cu, st.cuMark?[2017]:[], st.on==='mx')+'</figure>'+
-      '<figure><figcaption>Mexican signings</figcaption>'+
-        one(mx, st.mx, st.mxMark?[2018]:[], st.on==='cu')+'</figure></div>';
-  };
-  return {stages:[
-    {cap:'Cuba was barely a presence here — eight players in 2015-16.', on:'cu',
-     cu:{i:i15,v:cu[i15],color:'var(--chart-h)',text:'8'}},
-    {cap:'Then thirty-one in a single year, and forty-four two years later.', on:'cu',
-     cu:{i:i16,v:cu[i16],color:'var(--chart-h)',text:'31'}, cuMark:true},
-    {cap:'Mexico ran the other way: sixty players, then twenty-five.', on:'mx',
-     mx:{i:i18,v:mx[i18],color:'var(--chart-h)',text:'25'}},
-    {cap:'That was the year Major League Baseball banned all deals with the Mexican League.',
-     on:'mx', mx:{i:i18,v:mx[i18],color:'var(--chart-h)',text:'25'}, mxMark:true}
-  ], draw, table:mkTable([
-    {h:'Cuba',vals:cu,fmt:v=>v},{h:'Mexico',vals:mx,fmt:v=>v},
-    {h:'Signings',vals:MKP.map(p=>p.n),fmt:v=>v.toLocaleString()}])};
-}
-
-function mkBeatCeiling(){
-  const mx=MKP.map(p=>p.max), t5=MKP.map(p=>p.top5);
-  const i16=MKP.findIndex(p=>p.p===2016), i17=MKP.findIndex(p=>p.p===2017);
-  const draw=st=>mkLine({ymin:0,ticks:4,yfmt:v=>usdM(v), marks:st.mark?[2017]:[],
-    series:[
-      {key:'max',label:'Largest bonus',color:'var(--chart-h)',vals:mx,dim:st.on==='t5'},
-      {key:'t5',label:'Top five combined',color:'var(--chart-p)',vals:st.showT5?t5:mx.map(()=>null),
-       dim:st.on==='max'}],
-    callout:st.call});
-  return {stages:[
-    {cap:'In 2016-17 the largest signing bonus in this market was $26 million.', on:'max',
-     call:{i:i16,v:mx[i16],color:'var(--chart-h)',text:'$26M'}},
-    {cap:'The next year the largest was $3.8 million.', on:'max',
-     call:{i:i17,v:mx[i17],color:'var(--chart-h)',text:'$3.8M'}},
-    {cap:'A hard cap on spending started that year. The ceiling has not come back.',
-     on:'max', mark:true, call:{i:i17,v:mx[i17],color:'var(--chart-h)',text:'$3.8M'}},
-    {cap:'The five biggest bonuses of a year fell the same way — $56 million to $15 million.',
-     showT5:true, mark:true}
-  ], draw, table:mkTable([
-    {h:'Largest',vals:mx,fmt:v=>usdM(v)},{h:'Top five',vals:t5,fmt:v=>usdM(v)},
-    {h:'Bonuses published',vals:MKP.map(p=>p.nbon),fmt:v=>v}])};
-}
-
-function mkBeatCuba(){
-  const ds=MKP.map(p=>p.cu_dollar_share), sh=MKP.map(p=>p.s_cu);
-  const i16=MKP.findIndex(p=>p.p===2016), i17=MKP.findIndex(p=>p.p===2017),
-        i18=MKP.findIndex(p=>p.p===2018);
-  const draw=st=>mkLine({ymin:0,ymax:0.58,ticks:4,yfmt:v=>pcM(v), marks:st.mark?[2017]:[],
-    series:[
-      {key:'d',label:'Share of bonus money',color:'var(--chart-h)',vals:ds,dim:st.on==='s'},
-      {key:'s',label:'Share of players signed',color:'var(--chart-p)',
-       vals:st.showShare?sh:ds.map(()=>null),dim:st.on==='d'}],
-    callout:st.call});
-  return {stages:[
-    {cap:'Half of every published bonus dollar in 2016-17 went to Cuban players.', on:'d',
-     call:{i:i16,v:ds[i16],color:'var(--chart-h)',text:'50%'}},
-    {cap:'The year after, six per cent.', on:'d', mark:true,
-     call:{i:i17,v:ds[i17],color:'var(--chart-h)',text:'6%'}},
-    {cap:'But the share of players signed from Cuba held steady, and then rose.',
-     showShare:true, mark:true,
-     call:{i:i18,v:sh[i18],color:'var(--chart-p)',text:pcM(sh[i18],1)}},
-    {cap:'The cap did not stop the signings. It stopped the prices.', showShare:true, mark:true}
-  ], draw, table:mkTable([
-    {h:'Cuban share of $',vals:ds,fmt:v=>pcM(v,1)},
-    {h:'Cuban share of players',vals:sh,fmt:v=>pcM(v,1)},
-    {h:'Cuban dollars',vals:MKP.map(p=>p.cu_dollars),fmt:v=>usdM(v)}])};
-}
-
-const MKSECT=[
-  {kind:'sect', h:'PLACEHOLDER section heading', p:'PLACEHOLDER. Where the players come from.'},
-  {kind:'beat', h:'PLACEHOLDER heading', build:mkBeatCountries},
-  {kind:'beat', h:'PLACEHOLDER heading', build:mkBeatSmall},
-  {kind:'sect', h:'PLACEHOLDER section heading', p:'PLACEHOLDER. What the top of the market costs.'},
-  {kind:'beat', h:'PLACEHOLDER heading', build:mkBeatCeiling},
-  {kind:'beat', h:'PLACEHOLDER heading', build:mkBeatCuba}
-];
-
-function mkRuleStrip(){
-  const rows=MK.eras.map(e=>{
-    const bits=[e.pool_system?'bonus pools':'no pools',
-      'foreign professional at '+e.fp_age+' and '+e.fp_seasons+' seasons'+(e.proxy?' (proxy)':'')];
-    if(e.cuba_seasons!==null&&e.cuba_seasons!==undefined) bits.push('Cuba bar '+e.cuba_seasons);
-    if(e.floor) bits.push('floor $'+e.floor.toLocaleString());
-    return '<div class="cba-era"><b>'+e.era+'</b><span>'+bits.join(' · ')+'</span></div>';
-  }).join('');
-  return '<details class="cba-tl"><summary>The three agreements behind these years</summary>'+
-         '<div class="cba-rules">'+rows+'</div><div class="cba-note">'+
-         MK.events.map(e=>{const p=mkAt(e.p);
-           return '<b>'+(p?p.label:e.p)+'</b> '+e.label;}).join('<br>')+'</div></details>';
-}
-
-let mktDrawn=false, MKB=[];
 /* ---------- Market Trends: the broadsheet ----------
    Charts here are built as SVG strings the way every other scene in this file
    is, not through d3 selections: the page has to render with d3 absent, and
@@ -5967,73 +5685,6 @@ function drawCba(){
   cbaDrawn = true;
   cbaMasthead();
   cbaBeats();
-}
-
-function drawMkt(){
-  if(mktDrawn) return;
-  mktDrawn=true;
-  MKB=MKSECT.map(st=>st.kind==='beat'?st.build():null);
-  $('#mkt-blocks').innerHTML=MKSECT.map((st,i)=>{
-    if(st.kind==='sect')
-      return '<article class="sblock mk-sect" data-i="'+i+'"><h2 class="mk-sh">'+st.h+
-             '</h2><p class="sb-cap">'+st.p+'</p></article>';
-    const b=MKB[i], s0=b.stages[0];
-    // lead / stages / trailing hold, matching the story tab's pinning
-    // Pacing: a short lead so the figure pins before anything moves, a
-    // generous span per caption, and a brief hold so the last sentence
-    // lands before the block releases. Stages get 68% of the track.
-    // Pacing. At 40vh a stage each block ran 2.9 screens for four sentences and
-    // the whole tab took twelve screens, which reads as an endless scroll rather
-    // than a story. Roughly a quarter-screen per caption is enough to register.
-    const per=26, lead=22, hold=32, tvh=lead+b.stages.length*per+hold;
-    return '<article class="sblock" data-i="'+i+'" data-stages="'+b.stages.length+
-      '" data-stage="-1" data-lead="'+(lead/tvh).toFixed(4)+'" data-hold="'+(hold/tvh).toFixed(4)+
-      '"><div class="sb-stick"><h3 class="sb-h">'+st.h+'</h3>'+
-      '<div class="sb-fig cbawrap"><div class="mk-plot" role="img" aria-label="'+
-      s0.cap.replace(/"/g,'')+'">'+b.draw(s0)+'</div>'+
-      '<p class="mk-cap sb-swap">'+s0.cap+'</p>'+b.table+'</div></div>'+
-      '<div class="sb-track" style="height:'+tvh+'vh"></div></article>';
-  }).join('');
-  $('#mkt-rules').innerHTML=mkRuleStrip();
-  wireMktHover();
-  SCROLLYS.push(['#p-mkt','#mkt-blocks',paintMktStage]);
-  ensureScrollWired();
-  scanBlocks();
-}
-
-// Repaint the pinned figure for the stage the reader has scrolled to, and swap
-// the one sentence that goes with it.
-function paintMktStage(el,k,first){
-  const b=MKB[+el.dataset.i]; if(!b) return;
-  const sg=b.stages[k];
-  const plot=el.querySelector('.mk-plot');
-  plot.innerHTML=b.draw(sg);
-  plot.setAttribute('aria-label', sg.cap.replace(/"/g,''));
-  const cap=el.querySelector('.mk-cap');
-  const put=()=>{ cap.textContent=sg.cap; };
-  if(first||REDUCE||document.hidden||cap.textContent===sg.cap) put();
-  else { cap.classList.add('out'); setTimeout(()=>{ put(); cap.classList.remove('out'); },200); }
-  wireMktHover();
-}
-
-function wireMktHover(){
-  const tip=$('#mkttip');
-  document.querySelectorAll('#mkt-blocks .mkhit').forEach(r=>{
-    if(r.dataset.wired) return; r.dataset.wired='1';
-    r.addEventListener('mousemove',e=>{
-      const p=MKP[+r.dataset.i], wrap=r.closest('.cbawrap').getBoundingClientRect();
-      tip.innerHTML='<b>'+p.label+'</b>'+
-        '<div class="r"><span>Signings</span><span>'+p.n.toLocaleString()+'</span></div>'+
-        '<div class="r"><span>D.R. / Ven.</span><span>'+pcM(p.s_dr)+' / '+pcM(p.s_vz)+'</span></div>'+
-        '<div class="r"><span>Cuba / Mexico</span><span>'+p.n_cu+' / '+p.n_mx+'</span></div>'+
-        '<div class="r"><span>Largest bonus</span><span>'+(p.max?usdM(p.max):'—')+'</span></div>';
-      tip.hidden=false;
-      const x=e.clientX-wrap.left+14, y=e.clientY-wrap.top+14;
-      tip.style.left=Math.min(x,wrap.width-tip.offsetWidth-8)+'px';
-      tip.style.top=Math.max(0,Math.min(y,wrap.height-tip.offsetHeight-8))+'px';
-    });
-    r.addEventListener('mouseleave',()=>{tip.hidden=true;});
-  });
 }
 
 function drawMethods(){
