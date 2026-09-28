@@ -1233,17 +1233,20 @@ const PUBLIC = !!D.public;
 // when its content and copy are finished, not when its charts first render. The
 // local build always shows everything, so work in progress stays reachable while
 // it is being built.
-// The published page shows every tab the local build does (Elliot's call,
-// 2026-09-27: one dashboard, so a local page and the live one cannot drift and
-// cannot be confused for each other). Which tabs finally ship, and which of the
-// three market-trends tabs survives, is still open.
+// Which tabs the published page shows. Everything else is built and wired and
+// runs locally; adding a tab id here is all it takes to publish it.
 //
-// 't-index' is the exception and cannot be added here: the player index IS the
-// per-player census -- names and dates of birth of minors -- which the public
-// build strips on purpose, so the tab would either ship that data or show an
-// empty table. Everything else runs on aggregates the public payload carries.
-const V1_TABS = ['t-story', 't-cba', 't-stars', 't-era', 't-mkt', 't-ov', 't-map',
-                 't-teams', 't-cmp', 't-pol', 't-str', 't-me'];
+// Every tab was published on 2026-09-27 and taken back off on 2026-09-28
+// (Elliot's call), because that put the PLACEHOLDER headings and the two
+// "empty on purpose" tabs in front of anyone with the link. Hiding a tab here
+// removes its button and leaves its panel in the page, so this is a courtesy,
+// not a wall: the file is served from a public repo and anyone who reads the
+// source can still see what is in it.
+//
+// 't-index' can never be added: the player index IS the per-player census --
+// names and dates of birth of minors -- which the public build strips, so the
+// tab would either ship that data or serve an empty table.
+const V1_TABS = ['t-story', 't-cba', 't-mkt'];
 if(PUBLIC){
   // Hide by removing the nav BUTTON and leaving the panel in the DOM. Deleting
   // a panel removed controls that page setup wires at load (#f-c, #f-p, #f-t),
